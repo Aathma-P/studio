@@ -114,18 +114,17 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         return a.location.section - b.location.section;
     });
 
-    const waypoints: {point: MapPoint, itemId: string}[] = [
-        { point: ENTRANCE_POS, itemId: 'entrance' },
+    const waypoints: {point: MapPoint, item?: ShoppingListItem}[] = [
+        { point: ENTRANCE_POS },
         ...sortedItems.map(item => ({
             point: {
                 x: getAisleNavX(item.location.aisle),
                 y: item.location.section,
             },
-            itemId: item.id
+            item: item
         })),
-        { point: CHECKOUT_POS, itemId: 'checkout' },
+        { point: CHECKOUT_POS },
     ];
-
     
     let fullPath: MapPoint[] = [];
     for (let i = 0; i < waypoints.length - 1; i++) {
@@ -136,9 +135,9 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         }
     }
 
-    if(fullPath.length < 2) return instructions;
+    if(fullPath.length < 2) return [];
 
-    instructions.push({ type: 'start', text: 'Start at the entrance. Follow the path.', pathPoint: fullPath[0] });
+    instructions.push({ type: 'start', text: 'Start at the entrance', pathPoint: fullPath[0] });
 
     let currentDirection: 'N'|'S'|'E'|'W' | null = null;
     let straightCount = 0;
@@ -149,58 +148,57 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
 
-        let direction: 'N'|'S'|'E'|'W';
-        if (dy < 0) direction = 'N';
-        else if (dy > 0) direction = 'S';
-        else if (dx > 0) direction = 'E';
-        else direction = 'W';
+        let newDirection: 'N'|'S'|'E'|'W';
+        if (dy < 0) newDirection = 'N';
+        else if (dy > 0) newDirection = 'S';
+        else if (dx > 0) newDirection = 'E';
+        else newDirection = 'W';
 
-        const waypointIndex = waypoints.findIndex(wp => wp.point.x === p2.x && wp.point.y === p2.y);
-        const isAtWaypoint = waypointIndex > 0;
+        if (!currentDirection) {
+            currentDirection = newDirection;
+        }
 
-        if (direction === currentDirection && !isAtWaypoint) {
-            straightCount++;
-        } else {
+        const waypoint = waypoints.find(wp => wp.point.x === p2.x && wp.point.y === p2.y);
+
+        if (newDirection !== currentDirection) {
             if (straightCount > 0) {
                  instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p1});
             }
             
-            if (currentDirection) {
-                let turnText = "";
-                let turnType: InstructionType = 'straight';
-                if (currentDirection === 'N' && direction === 'W') { turnType = 'left'; turnText = 'Turn left'; }
-                else if (currentDirection === 'N' && direction === 'E') { turnType = 'right'; turnText = 'Turn right'; }
-                else if (currentDirection === 'S' && direction === 'W') { turnType = 'right'; turnText = 'Turn right'; }
-                else if (currentDirection === 'S' && direction === 'E') { turnType = 'left'; turnText = 'Turn left'; }
-                else if (currentDirection === 'W' && direction === 'S') { turnType = 'left'; turnText = 'Turn left'; }
-                else if (currentDirection === 'W' && direction === 'N') { turnType = 'right'; turnText = 'Turn right'; }
-                else if (currentDirection === 'E' && direction === 'S') { turnType = 'right'; turnText = 'Turn right'; }
-                else if (currentDirection === 'E' && direction === 'N') { turnType = 'left'; turnText = 'Turn left'; }
+            let turnText = "";
+            let turnType: InstructionType = 'straight';
+            if (currentDirection === 'N' && newDirection === 'W') { turnType = 'left'; turnText = 'Turn left'; }
+            else if (currentDirection === 'N' && newDirection === 'E') { turnType = 'right'; turnText = 'Turn right'; }
+            else if (currentDirection === 'S' && newDirection === 'W') { turnType = 'right'; turnText = 'Turn right'; }
+            else if (currentDirection === 'S' && newDirection === 'E') { turnType = 'left'; turnText = 'Turn left'; }
+            else if (currentDirection === 'W' && newDirection === 'S') { turnType = 'left'; turnText = 'Turn left'; }
+            else if (currentDirection === 'W' && newDirection === 'N') { turnType = 'right'; turnText = 'Turn right'; }
+            else if (currentDirection === 'E' && newDirection === 'S') { turnType = 'right'; turnText = 'Turn right'; }
+            else if (currentDirection === 'E' && newDirection === 'N') { turnType = 'left'; turnText = 'Turn left'; }
 
-                if (turnText) {
-                    instructions.push({ type: turnType, text: turnText, pathPoint: p1 });
-                }
+            if (turnText) {
+                instructions.push({ type: turnType, text: turnText, pathPoint: p1 });
             }
             
-            currentDirection = direction;
-            straightCount = 1;
+            currentDirection = newDirection;
+            straightCount = 0;
         }
 
-        if (isAtWaypoint) {
-             if (straightCount > 0) {
+        if (waypoint && waypoint.item) {
+            if (straightCount > 0) {
                 instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p2});
             }
-            straightCount = 0;
             
-            const waypoint = waypoints[waypointIndex];
-            const item = sortedItems.find(it => it.id === waypoint.itemId);
-            if (item) {
-                const itemShelfX = (item.location.aisle - 1) * 2 + 1;
-                const turnDirection = itemShelfX < waypoint.point.x ? 'left' : 'right';
-                const turnInstructionType = turnDirection === 'left' ? 'turn-left' : 'turn-right';
-                instructions.push({ type: turnInstructionType, text: `Item is on your ${turnDirection}`, pathPoint: p2 });
-                instructions.push({ type: 'scan', text: `Scan for ${item.name}`, itemId: item.id, pathPoint: p2 });
-            }
+            const item = waypoint.item;
+            const itemShelfX = (item.location.aisle - 1) * 2 + 1;
+            const turnDirection = itemShelfX < waypoint.point.x ? 'left' : 'right';
+            const turnInstructionType = turnDirection === 'left' ? 'turn-left' : 'turn-right';
+            
+            instructions.push({ type: turnInstructionType, text: `Item is on your ${turnDirection}`, pathPoint: p2 });
+            instructions.push({ type: 'scan', text: `Scan for ${item.name}`, itemId: item.id, pathPoint: p2 });
+            straightCount = 0;
+        } else {
+             straightCount++;
         }
     }
 
