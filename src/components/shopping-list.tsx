@@ -18,8 +18,6 @@ interface ShoppingListProps {
   onAddItem: (product: Product) => void;
   onRemoveItem: (productId: string) => void;
   onToggleItem: (productId: string) => void;
-  isSearching?: boolean;
-  onSearchChange?: (isSearching: boolean) => void;
 }
 
 export default function ShoppingList({
@@ -28,54 +26,44 @@ export default function ShoppingList({
   onAddItem,
   onRemoveItem,
   onToggleItem,
-  isSearching,
-  onSearchChange,
 }: ShoppingListProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-
-  const isMobileSearch = isSearching !== undefined && onSearchChange !== undefined;
+  const [showSearchResults, setShowSearchResults] = React.useState(false);
 
   React.useEffect(() => {
-    if (isMobileSearch && isSearching) {
-        setSearchTerm("");
-        searchInputRef.current?.focus();
+    if (searchTerm.trim() !== "") {
+      setShowSearchResults(true);
+    } else {
+      setShowSearchResults(false);
     }
-  }, [isSearching, isMobileSearch]);
-  
-  React.useEffect(() => {
-    if (!isMobileSearch) return;
-    if (searchTerm) {
-        onSearchChange?.(true);
-    }
-  }, [searchTerm, onSearchChange, isMobileSearch]);
-
+  }, [searchTerm]);
 
   const searchResults = React.useMemo(() => {
-    const term = isMobileSearch ? searchTerm : searchTerm;
-    if (!term) return [];
+    if (!searchTerm) return [];
     return allProducts.filter((product) =>
-      product.name.toLowerCase().includes(term.toLowerCase())
+      product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, allProducts, isMobileSearch]);
+  }, [searchTerm, allProducts]);
 
   const handleClearSearch = () => {
     setSearchTerm("");
+    setShowSearchResults(false);
     searchInputRef.current?.focus();
-    if(isMobileSearch) {
-        onSearchChange?.(false);
-    }
   };
-  
-  const pendingItems = items.filter(item => !item.completed);
-  const completedItems = items.filter(item => item.completed);
 
-  const currentSearchTerm = isMobileSearch ? searchTerm : searchTerm;
+  const handleAddItem = (product: Product) => {
+    onAddItem(product);
+    handleClearSearch();
+  };
+
+  const pendingItems = items.filter((item) => !item.completed);
+  const completedItems = items.filter((item) => item.completed);
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground">
       <div className="p-4">
-        <h2 className="text-lg font-semibold">Shopping List</h2>
+        <h2 className="text-lg font-semibold md:hidden">Shopping List</h2>
         <div className="relative mt-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -84,9 +72,8 @@ export default function ShoppingList({
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onFocus={() => onSearchChange?.(true)}
           />
-          {currentSearchTerm && (
+          {searchTerm && (
             <Button
               variant="ghost"
               size="icon"
@@ -100,8 +87,8 @@ export default function ShoppingList({
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="px-4">
-          {currentSearchTerm ? (
+        <div className="px-4 pb-4">
+          {showSearchResults ? (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-muted-foreground">
                 Search Results
@@ -120,8 +107,8 @@ export default function ShoppingList({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => onAddItem(product)}
-                      disabled={items.some(i => i.id === product.id)}
+                      onClick={() => handleAddItem(product)}
+                      disabled={items.some((i) => i.id === product.id)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -136,41 +123,72 @@ export default function ShoppingList({
           ) : (
             <>
               {pendingItems.length > 0 && (
-                 <div className="space-y-2">
-                    {pendingItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50">
-                        <Checkbox
-                          id={`item-${item.id}`}
-                          checked={item.completed}
-                          onCheckedChange={() => onToggleItem(item.id)}
-                        />
-                        <label htmlFor={`item-${item.id}`} className={cn("flex-1 text-sm", item.completed && "line-through text-muted-foreground")}>
-                          {item.name}
-                        </label>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onRemoveItem(item.id)}>
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </div>
-                    ))}
-                 </div>
+                <div className="space-y-2">
+                  {pendingItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50"
+                    >
+                      <Checkbox
+                        id={`item-${item.id}`}
+                        checked={item.completed}
+                        onCheckedChange={() => onToggleItem(item.id)}
+                      />
+                      <label
+                        htmlFor={`item-${item.id}`}
+                        className={cn(
+                          "flex-1 text-sm",
+                          item.completed && "line-through text-muted-foreground"
+                        )}
+                      >
+                        {item.name}
+                      </label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        onClick={() => onRemoveItem(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               )}
 
               {completedItems.length > 0 && (
                 <>
-                <Separator className="my-4" />
+                  <Separator className="my-4" />
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-muted-foreground">Completed</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">
+                      Completed
+                    </h3>
                     {completedItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50">
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50"
+                      >
                         <Checkbox
                           id={`item-${item.id}`}
                           checked={item.completed}
                           onCheckedChange={() => onToggleItem(item.id)}
                         />
-                        <label htmlFor={`item-${item.id}`} className={cn("flex-1 text-sm", item.completed && "line-through text-muted-foreground")}>
+                        <label
+                          htmlFor={`item-${item.id}`}
+                          className={cn(
+                            "flex-1 text-sm",
+                            item.completed &&
+                              "line-through text-muted-foreground"
+                          )}
+                        >
                           {item.name}
                         </label>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onRemoveItem(item.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() => onRemoveItem(item.id)}
+                        >
                           <Trash2 className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       </div>
@@ -178,7 +196,7 @@ export default function ShoppingList({
                   </div>
                 </>
               )}
-              
+
               {items.length === 0 && (
                 <div className="py-10 text-center text-sm text-muted-foreground">
                   Your shopping list is empty.

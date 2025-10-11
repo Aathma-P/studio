@@ -53,11 +53,6 @@ export default function ArView({ items }: ArViewProps) {
       } catch (error) {
         console.error("Error accessing camera:", error);
         setHasCameraPermission(false);
-        toast({
-          variant: "destructive",
-          title: "Camera Access Denied",
-          description: "Please enable camera permissions in your browser settings to use the AR view.",
-        });
       }
     };
 
@@ -140,7 +135,6 @@ export default function ArView({ items }: ArViewProps) {
 
         setScanResult(result);
         
-        // After showing the result, move to the next item or loop back
         setTimeout(() => {
             setCurrentItemIndex((prevItem) =>
               prevItem < sortedItems.length - 1 ? prevItem + 1 : 0
@@ -164,6 +158,28 @@ export default function ArView({ items }: ArViewProps) {
   };
 
 
+  if (hasCameraPermission === null) {
+      return (
+          <div className="w-full h-full flex items-center justify-center bg-black">
+              <LoaderCircle className="w-12 h-12 text-white animate-spin" />
+          </div>
+      )
+  }
+
+  if (hasCameraPermission === false) {
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-black p-4">
+            <Alert variant="destructive" className="max-w-sm">
+              <CameraOff className="h-4 w-4" />
+              <AlertTitle>Camera Access Required</AlertTitle>
+              <AlertDescription>
+                Please enable camera permissions in your browser settings to use the AR view.
+              </AlertDescription>
+            </Alert>
+        </div>
+    );
+  }
+
   if (!currentItem) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
@@ -182,18 +198,6 @@ export default function ArView({ items }: ArViewProps) {
         <canvas ref={canvasRef} className="hidden" />
       
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
-
-      {hasCameraPermission === false && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20">
-            <Alert variant="destructive" className="max-w-sm">
-              <CameraOff className="h-4 w-4" />
-              <AlertTitle>Camera Access Required</AlertTitle>
-              <AlertDescription>
-                Please enable camera permissions in your browser to use the AR view.
-              </AlertDescription>
-            </Alert>
-        </div>
-      )}
 
       <div className="absolute top-0 left-0 right-0 p-6 text-white z-10">
         <div className="w-full bg-white/20 backdrop-blur-sm rounded-full h-1.5">
