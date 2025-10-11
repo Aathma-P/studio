@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { ShoppingListItem, MapPoint } from '@/lib/types';
 import { STORE_LAYOUT, ENTRANCE_POS, CHECKOUT_POS } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { ShoppingBasket, Navigation } from 'lucide-react';
+import { ShoppingBasket } from 'lucide-react';
 
 interface StoreMapProps {
   items: ShoppingListItem[];
@@ -16,87 +16,6 @@ const getAisleX = (aisle: number) => (aisle - 1) * 2 + 1;
 
 export default function StoreMap({ items }: StoreMapProps) {
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
-  const [userPosition, setUserPosition] = React.useState<MapPoint | null>(null);
-  const [userHeading, setUserHeading] = React.useState<number | null>(null);
-
-
-  React.useEffect(() => {
-    let watchId: number;
-
-    const handleSuccess = (position: GeolocationPosition) => {
-      // In a real application, you would have a function to convert
-      // GPS coordinates (latitude, longitude) to your store's map coordinates (x, y).
-      // For this demo, we'll continue to use a simulated path, but triggered by GPS updates.
-      // This demonstrates the integration of the Geolocation API.
-      
-      // A simple simulation of converting coordinates:
-      // This is NOT a real conversion. It's for demonstration purposes.
-      const simulatedX = (position.coords.longitude % 0.001) * 10000;
-      const simulatedY = (position.coords.latitude % 0.001) * 10000;
-
-      // To keep the arrow within the map for the demo, we'll still use predefined points,
-      // but the *update* is now triggered by real GPS data.
-      if (!userPosition) {
-        setUserPosition({ x: 0.5, y: 11.5 });
-      } else {
-         // This is where you would put your logic to update the position based on the new coordinates.
-         // For now, let's just log it to show it's working.
-         console.log("New position from GPS:", position.coords);
-         // To make it visually move for the demo, let's just cycle through some points on each update.
-         const simulatedPositions: MapPoint[] = [
-            { x: 0.5, y: 11.5 }, { x: 2.5, y: 11.5 }, { x: 4.5, y: 10.5 },
-            { x: 4.5, y: 8 }, { x: 4.5, y: 6 }, { x: 6.5, y: 6 },
-            { x: 8.5, y: 6 }, { x: 8.5, y: 4 }, { x: 8.5, y: 2 },
-            { x: 6.5, y: 2 }, { x: 4.5, y: 2 }, { x: 2.5, y: 2 },
-            { x: 0.5, y: 2 }, { x: 0.5, y: 5 }, { x: 0.5, y: 8 },
-            { x: 0.5, y: 11.5 }
-         ];
-         const currentIndex = simulatedPositions.findIndex(p => p.x === userPosition.x && p.y === userPosition.y);
-         const nextIndex = (currentIndex + 1) % simulatedPositions.length;
-         setUserPosition(simulatedPositions[nextIndex]);
-      }
-      if (position.coords.heading !== null) {
-          setUserHeading(position.coords.heading);
-      }
-    };
-
-    const handleError = (error: GeolocationPositionError) => {
-      console.warn(`ERROR(${error.code}): ${error.message}`);
-      // Fallback to initial position if GPS fails
-      if (!userPosition) {
-        setUserPosition(ENTRANCE_POS);
-      }
-    };
-
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0,
-      });
-    }
-
-    // Device orientation for compass heading
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-        if (event.webkitCompassHeading) {
-            // Apple devices
-            setUserHeading(event.webkitCompassHeading);
-        } else if (event.alpha !== null) {
-            // Standard devices
-            setUserHeading(360 - event.alpha);
-        }
-    };
-
-    window.addEventListener('deviceorientation', handleOrientation);
-
-    return () => {
-      if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-      window.removeEventListener('deviceorientation', handleOrientation);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
 
   const sortedItems = React.useMemo(() => {
     return [...items].sort((a, b) => {
@@ -134,7 +53,7 @@ export default function StoreMap({ items }: StoreMapProps) {
 
 
   return (
-    <div className="w-full h-full flex items-center justify-center overflow-auto bg-muted/20">
+    <div className="w-full h-full flex items-center justify-center overflow-auto bg-muted/20 p-4">
       {items.length === 0 ? (
         <div className="text-center">
           <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -144,10 +63,11 @@ export default function StoreMap({ items }: StoreMapProps) {
       ) : (
         <div 
           ref={mapContainerRef} 
-          className="relative origin-top-left"
+          className="relative"
           style={{
             width: STORE_LAYOUT[0].length * CELL_SIZE,
             height: STORE_LAYOUT.length * CELL_SIZE,
+            minWidth: STORE_LAYOUT[0].length * CELL_SIZE,
           }}
         >
           {/* Render layout */}
@@ -174,15 +94,15 @@ export default function StoreMap({ items }: StoreMapProps) {
           {sortedItems.map((item, index) => {
               const aisleX = getAisleX(item.location.aisle);
               const itemY = item.location.section;
-              const isFirst = index === 0;
               return (
                 <div 
                     key={item.id}
-                    className="absolute flex items-center justify-center bg-primary rounded-full text-primary-foreground text-xs w-6 h-6"
+                    className="absolute flex items-center justify-center bg-primary rounded-full text-primary-foreground text-xs w-6 h-6 z-10"
                     style={{
-                        left: aisleX * CELL_SIZE + CELL_SIZE / 4,
-                        top: itemY * CELL_SIZE + CELL_SIZE / 4,
+                        left: aisleX * CELL_SIZE + (CELL_SIZE - 24) / 2,
+                        top: itemY * CELL_SIZE + (CELL_SIZE - 24) / 2,
                     }}
+                    title={item.name}
                 >
                     {index + 1}
                 </div>
@@ -198,20 +118,6 @@ export default function StoreMap({ items }: StoreMapProps) {
               strokeDasharray="5,5"
             />
           </svg>
-
-          {/* User Location Arrow */}
-          {userPosition && (
-              <div 
-                className="absolute transition-all duration-500 ease-linear"
-                style={{
-                    left: userPosition.x * CELL_SIZE,
-                    top: userPosition.y * CELL_SIZE,
-                    transform: `translate(${CELL_SIZE/2}px, ${CELL_SIZE/2}px) rotate(${userHeading || 0}deg)`
-                }}
-              >
-                  <Navigation className="text-blue-500 w-5 h-5 -translate-x-1/2 -translate-y-1/2" fill="currentColor" />
-              </div>
-          )}
         </div>
       )}
     </div>
