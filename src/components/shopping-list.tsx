@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Search, Trash2, X } from "lucide-react";
+import { Plus, Search, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
 
 import type { Product, ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ export default function ShoppingList({
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [showSearchResults, setShowSearchResults] = React.useState(false);
+  const [showCompleted, setShowCompleted] = React.useState(true);
 
   React.useEffect(() => {
     if (searchTerm.trim() !== "") {
@@ -160,10 +161,22 @@ export default function ShoppingList({
                 <>
                   <Separator className="my-4" />
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-muted-foreground">
-                      Completed
-                    </h3>
-                    {completedItems.map((item) => (
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Completed
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowCompleted(!showCompleted)}
+                        className="text-xs"
+                      >
+                        {showCompleted ? "Hide" : "Show"}
+                        {showCompleted ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
+                      </Button>
+                    </div>
+
+                    {showCompleted && completedItems.map((item) => (
                       <div
                         key={item.id}
                         className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50"
