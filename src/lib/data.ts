@@ -24,34 +24,33 @@ export const ALL_PRODUCTS: Product[] = [
   { id: 'bakery-2', name: 'Bagels', category: 'Bakery', icon: Icons.bakery, location: { aisle: 4, section: 4 } },
   { id: 'bakery-3', name: 'Croissants', category: 'Bakery', icon: Icons.bakery, location: { aisle: 4, section: 6 } },
 
-  // Pantry (Aisle 5 & 6)
+  // Pantry (Aisle 5)
   { id: 'pantry-1', name: 'Pasta', category: 'Pantry', icon: Icons.pantry, location: { aisle: 5, section: 2 } },
   { id: 'pantry-2', name: 'Pasta Sauce', category: 'Pantry', icon: Icons.pantry, location: { aisle: 5, section: 3 } },
   { id: 'pantry-3', name: 'Canned Beans', category: 'Pantry', icon: Icons.pantry, location: { aisle: 5, section: 5 } },
-  { id: 'pantry-4', name: 'Rice', category: 'Pantry', icon: Icons.pantry, location: { aisle: 6, section: 2 } },
-  { id: 'pantry-5', name: 'Cereal', category: 'Pantry', icon: Icons.pantry, location: { aisle: 6, section: 4 } },
-  { id: 'pantry-6', name: 'Coffee', category: 'Pantry', icon: Icons.pantry, location: { aisle: 6, section: 7 } },
+  { id: 'pantry-4', name: 'Rice', category: 'Pantry', icon: Icons.pantry, location: { aisle: 5, section: 6 } },
   
-  // Frozen (Aisle 7)
-  { id: 'frozen-1', name: 'Ice Cream', category: 'Frozen', icon: Icons.frozen, location: { aisle: 7, section: 2 } },
-  { id: 'frozen-2', name: 'Frozen Pizza', category: 'Frozen', icon: Icons.frozen, location: { aisle: 7, section: 4 } },
-  { id: 'frozen-3', name: 'Frozen Vegetables', category: 'Frozen', icon: Icons.frozen, location: { aisle: 7, section: 6 } },
+  // Frozen (Aisle 6)
+  { id: 'frozen-1', name: 'Ice Cream', category: 'Frozen', icon: Icons.frozen, location: { aisle: 6, section: 2 } },
+  { id: 'frozen-2', name: 'Frozen Pizza', category: 'Frozen', icon: Icons.frozen, location: { aisle: 6, section: 4 } },
+  { id: 'frozen-3', name: 'Frozen Vegetables', category: 'Frozen', icon: Icons.frozen, location: { aisle: 6, section: 6 } },
 ];
 
 // 0: path, 1: shelf, 2: entrance, 3: checkout
+// Grid is 13 cells wide (x) and 12 cells tall (y)
 export const STORE_LAYOUT = [
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-  [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-  [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-  [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-  [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-  [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-  [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-  [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // y=0 (Top wall)
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], // y=1 (Top corridor)
+  [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1], // y=2 (Aisle 1, 2, 3, 4, 5, 6)
+  [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1], // y=3
+  [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1], // y=4
+  [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1], // y=5
+  [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1], // y=6
+  [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1], // y=7
+  [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1], // y=8
+  [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], // y=9 (Bottom corridor)
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // y=10 (Walkway for entrance/checkout)
+  [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3], // y=11 (Bottom wall with entrance/checkout)
 ];
 
 export const AISLE_CENTERS = [
@@ -61,8 +60,7 @@ export const AISLE_CENTERS = [
   { aisle: 4, x: 7 },
   { aisle: 5, x: 9 },
   { aisle: 6, x: 11 },
-  { aisle: 7, x: 13 }, // Assuming more aisles
 ];
 
-export const ENTRANCE_POS = { x: 0, y: 11 };
-export const CHECKOUT_POS = { x: 12, y: 11 };
+export const ENTRANCE_POS = { x: 0, y: 10 };
+export const CHECKOUT_POS = { x: 12, y: 10 };

@@ -65,9 +65,13 @@ export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapP
                 continue;
             }
 
-            // Treat shelves (1) as obstacles
-            if (grid[nodePos.y][nodePos.x] === 1) {
-                continue;
+            // Treat shelves (1), entrance (2) and checkout (3) as obstacles, unless it's the destination
+            if (grid[nodePos.y][nodePos.x] === 1 || grid[nodePos.y][nodePos.x] === 2 || grid[nodePos.y][nodePos.x] === 3) {
+                 if (nodePos.x === endNode.pos.x && nodePos.y === endNode.pos.y) {
+                    // It's the destination, so it's fine
+                 } else {
+                    continue;
+                 }
             }
 
             const newNode = new Node(currentNode, nodePos);
@@ -104,50 +108,50 @@ export interface Instruction {
     itemId?: string;
 }
 
-const getAisleNavX = (aisle: number) => (aisle - 1) * 2;
+const getAisleNavX = (aisle: number) => aisle * 2;
 
 
 export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instruction[] {
     if (items.length === 0) return [];
 
-    const waypoints: MapPoint[] = [
-        ENTRANCE_POS,
-        ...items.map(item => ({
-            x: getAisleNavX(item.location.aisle),
-            y: item.location.section,
+     const sortedItems = [...items].sort((a, b) => {
+        if (a.location.aisle !== b.location.aisle) {
+            return a.location.aisle - b.location.aisle;
+        }
+        return a.location.section - b.location.section;
+    });
+
+    const waypoints: {point: MapPoint, itemId: string}[] = [
+        { point: ENTRANCE_POS, itemId: 'entrance' },
+        ...sortedItems.map(item => ({
+            point: {
+                x: getAisleNavX(item.location.aisle),
+                y: item.location.section,
+            },
+            itemId: item.id
         })),
-        CHECKOUT_POS,
+        { point: CHECKOUT_POS, itemId: 'checkout' },
     ];
 
-    const pathSegments: {path: MapPoint[], itemId: string}[] = [];
-
-    for (let i = 0; i < waypoints.length - 1; i++) {
-        const segment = findPath(waypoints[i], waypoints[i+1], STORE_LAYOUT);
-        if (segment) {
-            pathSegments.push({
-                path: i === 0 ? segment : segment.slice(1),
-                itemId: items[i]?.id || 'checkout',
-            });
-        }
-    }
-    
-
-    // --- Convert path segments to instructions ---
     const instructions: Instruction[] = [];
-    if (pathSegments.length === 0) return [];
+    if (waypoints.length < 2) return [];
 
     instructions.push({ type: 'start', text: 'Start at the entrance. Follow the path.' });
-    
-    for (const seg of pathSegments) {
-        const path = seg.path;
+
+    for (let i = 0; i < waypoints.length - 1; i++) {
+        const start = waypoints[i];
+        const end = waypoints[i+1];
+        
+        const path = findPath(start.point, end.point, STORE_LAYOUT);
+
         if (!path || path.length < 2) continue;
 
         let currentDirection: 'N'|'S'|'E'|'W' | null = null;
         let straightCount = 0;
 
-        for (let i = 1; i < path.length; i++) {
-            const p1 = path[i-1];
-            const p2 = path[i];
+        for (let j = 1; j < path.length; j++) {
+            const p1 = path[j-1];
+            const p2 = path[j];
             const dx = p2.x - p1.x;
             const dy = p2.y - p1.y;
 
@@ -160,12 +164,10 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
             if (direction === currentDirection) {
                 straightCount++;
             } else {
-                // Add previous straight instruction if any
                 if (straightCount > 0) {
                      instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount});
                 }
                 
-                // Determine turn
                 if (currentDirection) {
                     if (currentDirection === 'N' && direction === 'W') instructions.push({ type: 'left', text: 'Turn left.' });
                     else if (currentDirection === 'N' && direction === 'E') instructions.push({ type: 'right', text: 'Turn right.' });
@@ -181,14 +183,13 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
                 straightCount = 1;
             }
         }
-         // Add final straight instruction
          if (straightCount > 0) {
             instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount});
         }
         
-        const nextItem = items.find(i => i.id === seg.itemId);
+        const nextItem = sortedItems.find(item => item.id === end.itemId);
         if (nextItem) {
-             instructions.push({ type: 'scan', text: `You've arrived. Scan for ${nextItem.name}.`, itemId: seg.itemId });
+             instructions.push({ type: 'scan', text: `You've arrived. Scan for ${nextItem.name}.`, itemId: end.itemId });
         }
     }
     
