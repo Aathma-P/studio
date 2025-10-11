@@ -91,6 +91,9 @@ export default function Home() {
                     </Button>
                 </SheetTrigger>
                  <SheetContent side="left" className="w-full max-w-sm p-0">
+                   <SheetHeader>
+                     <SheetTitle className="sr-only">Shopping List</SheetTitle>
+                   </SheetHeader>
                    <ShoppingList
                     items={shoppingList}
                     onAddItem={handleAddItem}
