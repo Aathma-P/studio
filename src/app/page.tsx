@@ -96,8 +96,8 @@ export default function Home() {
            </div>
 
            {/* Mobile View */}
-           <div className="flex h-full flex-col md:hidden">
-             <div className="flex-1 overflow-y-auto">
+           <div className="relative flex h-full flex-col md:hidden">
+             <div className="flex-1 overflow-y-auto pb-16">
                 {mobileView === 'list' && (
                     <ShoppingList
                         items={shoppingList}
@@ -111,7 +111,7 @@ export default function Home() {
                 {mobileView === 'ar' && <ArView items={pendingItems} />}
              </div>
 
-            <div className="flex h-16 shrink-0 items-center justify-around border-t bg-card">
+            <div className="absolute bottom-0 left-0 right-0 flex h-16 shrink-0 items-center justify-around border-t bg-card">
                  <Button variant="ghost" size="lg" className={cn("flex-col h-auto py-2", mobileView === "list" && "text-primary")} onClick={() => setMobileView("list")}>
                     <List className="h-5 w-5"/>
                     <span className="text-xs">List</span>
