@@ -18,6 +18,8 @@ interface ShoppingListProps {
   onAddItem: (product: Product) => void;
   onRemoveItem: (productId: string) => void;
   onToggleItem: (productId: string) => void;
+  isSearching?: boolean;
+  onSearchChange?: (isSearching: boolean) => void;
 }
 
 export default function ShoppingList({
@@ -26,24 +28,49 @@ export default function ShoppingList({
   onAddItem,
   onRemoveItem,
   onToggleItem,
+  isSearching,
+  onSearchChange,
 }: ShoppingListProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
+  const isMobileSearch = isSearching !== undefined && onSearchChange !== undefined;
+
+  React.useEffect(() => {
+    if (isMobileSearch && isSearching) {
+        setSearchTerm("");
+        searchInputRef.current?.focus();
+    }
+  }, [isSearching, isMobileSearch]);
+  
+  React.useEffect(() => {
+    if (!isMobileSearch) return;
+    if (searchTerm) {
+        onSearchChange?.(true);
+    }
+  }, [searchTerm, onSearchChange, isMobileSearch]);
+
+
   const searchResults = React.useMemo(() => {
-    if (!searchTerm) return [];
+    const term = isMobileSearch ? searchTerm : searchTerm;
+    if (!term) return [];
     return allProducts.filter((product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      product.name.toLowerCase().includes(term.toLowerCase())
     );
-  }, [searchTerm, allProducts]);
+  }, [searchTerm, allProducts, isMobileSearch]);
 
   const handleClearSearch = () => {
     setSearchTerm("");
     searchInputRef.current?.focus();
+    if(isMobileSearch) {
+        onSearchChange?.(false);
+    }
   };
   
   const pendingItems = items.filter(item => !item.completed);
   const completedItems = items.filter(item => item.completed);
+
+  const currentSearchTerm = isMobileSearch ? searchTerm : searchTerm;
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground">
@@ -57,8 +84,9 @@ export default function ShoppingList({
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={() => onSearchChange?.(true)}
           />
-          {searchTerm && (
+          {currentSearchTerm && (
             <Button
               variant="ghost"
               size="icon"
@@ -73,7 +101,7 @@ export default function ShoppingList({
 
       <ScrollArea className="flex-1">
         <div className="px-4">
-          {searchTerm ? (
+          {currentSearchTerm ? (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-muted-foreground">
                 Search Results

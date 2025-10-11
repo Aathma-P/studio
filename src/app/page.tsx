@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Map, Camera, PanelLeft, ShoppingBasket } from "lucide-react";
+import { Map, Camera, PanelLeft, ShoppingBasket, Search } from "lucide-react";
 
 import type { ShoppingListItem, Product } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
@@ -12,6 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
@@ -29,11 +31,13 @@ import { Icons } from "@/components/icons";
 export default function Home() {
   const [shoppingList, setShoppingList] = React.useState<ShoppingListItem[]>([]);
   const [view, setView] = React.useState<"map" | "ar">("map");
+  const [isSearching, setIsSearching] = React.useState(false);
 
   const handleAddItem = (product: Product) => {
     if (!shoppingList.find((item) => item.id === product.id)) {
       setShoppingList([...shoppingList, { ...product, completed: false }]);
     }
+    setIsSearching(false);
   };
 
   const handleRemoveItem = (productId: string) => {
@@ -58,7 +62,7 @@ export default function Home() {
             <Icons.logo className="h-6 w-6 text-primary" />
             <span className="text-lg">Aisle Navigator</span>
           </div>
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-2">
             <div className="hidden items-center gap-2 rounded-lg bg-muted p-1 md:flex">
               <Button
                 variant={view === "map" ? "secondary" : "ghost"}
@@ -79,23 +83,29 @@ export default function Home() {
                 AR View
               </Button>
             </div>
-             <Sheet>
+             <Sheet open={isSearching} onOpenChange={setIsSearching}>
                 <SheetTrigger asChild>
                     <Button variant="outline" size="icon" className="md:hidden">
                         <ShoppingBasket className="h-4 w-4" />
                         <span className="sr-only">Toggle shopping list</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-full max-w-sm p-0">
-                  <ShoppingList
+                 <SheetContent side="left" className="w-full max-w-sm p-0">
+                   <ShoppingList
                     items={shoppingList}
                     onAddItem={handleAddItem}
                     onRemoveItem={handleRemoveItem}
                     onToggleItem={handleToggleItem}
                     allProducts={ALL_PRODUCTS}
+                    isSearching={isSearching}
+                    onSearchChange={setIsSearching}
                   />
                 </SheetContent>
             </Sheet>
+            <Button variant="outline" size="icon" className="md:hidden" onClick={() => setIsSearching(true)}>
+                <Search className="h-4 w-4" />
+                <span className="sr-only">Search items</span>
+            </Button>
           </div>
         </header>
 
