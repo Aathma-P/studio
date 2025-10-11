@@ -22,8 +22,8 @@ function heuristic(a: MapPoint, b: MapPoint) {
 }
 
 export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapPoint[] | null {
-    const startNode = new Node(null, start);
-    const endNode = new Node(null, end);
+    const startNode = new Node(null, {x: Math.round(start.x), y: Math.round(start.y)});
+    const endNode = new Node(null, {x: Math.round(end.x), y: Math.round(end.y)});
 
     const openList: Node[] = [];
     const closedList: Node[] = [];
@@ -66,7 +66,7 @@ export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapP
             }
 
             // Treat shelves (1) as obstacles
-            if (grid[Math.floor(nodePos.y)][Math.floor(nodePos.x)] === 1) {
+            if (grid[nodePos.y][nodePos.x] === 1) {
                 continue;
             }
 
@@ -83,7 +83,7 @@ export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapP
             child.h = heuristic(child.pos, endNode.pos);
             child.f = child.g + child.h;
 
-            if (openList.some(openNode => child.equals(openNode) && child.g > openNode.g)) {
+            if (openList.some(openNode => child.equals(openNode) && child.g >= openNode.g)) {
                 continue;
             }
 
@@ -103,18 +103,17 @@ export interface Instruction {
     itemId?: string;
 }
 
-const getAisleX = (aisle: number) => (aisle - 1) * 2 + 1;
+const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+
 
 export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instruction[] {
     if (items.length === 0) return [];
 
-    let fullPath: MapPoint[] = [];
-    let currentPos = ENTRANCE_POS;
-
     const pathSegments = [];
+    let currentPos = {x: Math.round(ENTRANCE_POS.x), y: Math.round(ENTRANCE_POS.y)};
 
     // Path from entrance to first item
-    const firstItemTarget = { x: getAisleX(items[0].location.aisle), y: items[0].location.section };
+    const firstItemTarget = { x: getAisleNavX(items[0].location.aisle), y: items[0].location.section };
     let segment = findPath(currentPos, firstItemTarget, STORE_LAYOUT);
     if (segment) {
       pathSegments.push({path: segment, itemId: items[0].id});
@@ -125,25 +124,27 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
     for (let i = 0; i < items.length - 1; i++) {
         const startItem = items[i];
         const endItem = items[i+1];
-        const startPos = { x: getAisleX(startItem.location.aisle), y: startItem.location.section };
-        const endPos = { x: getAisleX(endItem.location.aisle), y: endItem.location.section };
+        const startPos = { x: getAisleNavX(startItem.location.aisle), y: startItem.location.section };
+        const endPos = { x: getAisleNavX(endItem.location.aisle), y: endItem.location.section };
         
         segment = findPath(startPos, endPos, STORE_LAYOUT);
         if (segment) {
             pathSegments.push({path: segment.slice(1), itemId: endItem.id});
+             currentPos = segment[segment.length - 1];
         }
     }
 
     // Path from last item to checkout
-    const lastItem = items[items.length - 1];
-    const lastItemPos = { x: getAisleX(lastItem.location.aisle), y: lastItem.location.section };
-    segment = findPath(lastItemPos, CHECKOUT_POS, STORE_LAYOUT);
+    const checkoutTarget = { x: Math.round(CHECKOUT_POS.x), y: Math.round(CHECKOUT_POS.y) };
+    segment = findPath(currentPos, checkoutTarget, STORE_LAYOUT);
     if (segment) {
         pathSegments.push({path: segment.slice(1), itemId: 'checkout'});
     }
 
     // --- Convert path segments to instructions ---
     const instructions: Instruction[] = [];
+    if (pathSegments.length === 0) return [];
+
     instructions.push({ type: 'start', text: 'Start at the entrance. Follow the path.' });
     
     for (const seg of pathSegments) {
@@ -170,7 +171,7 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
             } else {
                 // Add previous straight instruction if any
                 if (straightCount > 0) {
-                     instructions.push({type: 'straight', text: `Proceed straight for ${straightCount + 1} steps.`, distance: straightCount + 1});
+                     instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount});
                 }
                 
                 // Determine turn
@@ -191,7 +192,7 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         }
          // Add final straight instruction
          if (straightCount > 0) {
-            instructions.push({type: 'straight', text: `Proceed straight for ${straightCount} steps.`, distance: straightCount});
+            instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount});
         }
         
         if (seg.itemId !== 'checkout') {

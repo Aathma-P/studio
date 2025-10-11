@@ -13,7 +13,8 @@ interface StoreMapProps {
 
 const INITIAL_CELL_SIZE = 40; // in pixels
 
-const getAisleX = (aisle: number) => (aisle - 1) * 2 + 1;
+// This function gets the walkable space next to an aisle
+const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
 
 export default function StoreMap({ items }: StoreMapProps) {
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
@@ -54,10 +55,10 @@ export default function StoreMap({ items }: StoreMapProps) {
     if (sortedItems.length === 0) return [];
     
     let fullPath: MapPoint[] = [];
-    let currentPos = ENTRANCE_POS;
+    let currentPos = {x: Math.round(ENTRANCE_POS.x), y: Math.round(ENTRANCE_POS.y)};
 
     // Path from entrance to first item
-    const firstItemTarget = { x: getAisleX(sortedItems[0].location.aisle), y: sortedItems[0].location.section };
+    const firstItemTarget = { x: getAisleNavX(sortedItems[0].location.aisle), y: sortedItems[0].location.section };
     let segment = findPath(currentPos, firstItemTarget, STORE_LAYOUT);
     if (segment) {
       fullPath = fullPath.concat(segment);
@@ -68,8 +69,9 @@ export default function StoreMap({ items }: StoreMapProps) {
     for (let i = 0; i < sortedItems.length - 1; i++) {
         const startItem = sortedItems[i];
         const endItem = sortedItems[i+1];
-        const startPos = { x: getAisleX(startItem.location.aisle), y: startItem.location.section };
-        const endPos = { x: getAisleX(endItem.location.aisle), y: endItem.location.section };
+        // Start from the walkable space next to the previous item
+        const startPos = { x: getAisleNavX(startItem.location.aisle), y: startItem.location.section };
+        const endPos = { x: getAisleNavX(endItem.location.aisle), y: endItem.location.section };
         
         segment = findPath(startPos, endPos, STORE_LAYOUT);
         if (segment) {
@@ -82,8 +84,9 @@ export default function StoreMap({ items }: StoreMapProps) {
     // Path from last item to checkout
     if (sortedItems.length > 0) {
         const lastItem = sortedItems[sortedItems.length - 1];
-        const lastItemPos = { x: getAisleX(lastItem.location.aisle), y: lastItem.location.section };
-        segment = findPath(lastItemPos, CHECKOUT_POS, STORE_LAYOUT);
+        const lastItemPos = { x: getAisleNavX(lastItem.location.aisle), y: lastItem.location.section };
+        const checkoutTarget = { x: Math.round(CHECKOUT_POS.x), y: Math.round(CHECKOUT_POS.y) };
+        segment = findPath(lastItemPos, checkoutTarget, STORE_LAYOUT);
         if (segment) {
             fullPath = fullPath.concat(segment.slice(1));
         }
@@ -92,9 +95,11 @@ export default function StoreMap({ items }: StoreMapProps) {
     return fullPath;
   }, [sortedItems]);
 
+  const getAisleShelfX = (aisle: number) => (aisle - 1) * 2 + 1;
+
 
   return (
-    <div ref={mapContainerRef} className="w-full h-full flex items-center justify-center bg-muted/20 p-4">
+    <div ref={mapContainerRef} className="w-full h-full flex items-center justify-center bg-muted/20 p-4 overflow-auto">
       {items.length === 0 ? (
         <div className="text-center">
           <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -103,7 +108,7 @@ export default function StoreMap({ items }: StoreMapProps) {
         </div>
       ) : (
         <div 
-          className="relative"
+          className="relative shrink-0"
           style={{
             width: STORE_LAYOUT[0].length * cellSize,
             height: STORE_LAYOUT.length * cellSize,
@@ -131,7 +136,7 @@ export default function StoreMap({ items }: StoreMapProps) {
           ))}
           {/* Render item locations */}
           {sortedItems.map((item, index) => {
-              const aisleX = getAisleX(item.location.aisle);
+              const aisleX = getAisleShelfX(item.location.aisle);
               const itemY = item.location.section;
               const iconSize = Math.max(16, cellSize * 0.6);
               return (
