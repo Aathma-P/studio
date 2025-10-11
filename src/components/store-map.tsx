@@ -15,6 +15,9 @@ const INITIAL_CELL_SIZE = 40; // in pixels
 
 // This function gets the walkable space next to an aisle
 const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+// This function gets the shelf space for an aisle
+const getAisleShelfX = (aisle: number) => (aisle - 1) * 2 + 1;
+
 
 export default function StoreMap({ items }: StoreMapProps) {
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
@@ -26,14 +29,13 @@ export default function StoreMap({ items }: StoreMapProps) {
 
     const resizeObserver = new ResizeObserver(() => {
       const containerWidth = mapContainer.offsetWidth;
-      const mapWidth = STORE_LAYOUT[0].length * INITIAL_CELL_SIZE;
+      // Subtract padding from container width for more accurate calculations
+      const containerPadding = parseFloat(getComputedStyle(mapContainer).paddingLeft) + parseFloat(getComputedStyle(mapContainer).paddingRight);
+      const availableWidth = containerWidth - containerPadding;
+      const mapGridWidth = STORE_LAYOUT[0].length;
       
-      if (containerWidth < mapWidth) {
-        const newCellSize = containerWidth / STORE_LAYOUT[0].length;
-        setCellSize(newCellSize);
-      } else {
-        setCellSize(INITIAL_CELL_SIZE);
-      }
+      const newCellSize = availableWidth / mapGridWidth;
+      setCellSize(Math.min(newCellSize, INITIAL_CELL_SIZE));
     });
 
     resizeObserver.observe(mapContainer);
@@ -95,9 +97,6 @@ export default function StoreMap({ items }: StoreMapProps) {
     return fullPath;
   }, [sortedItems]);
 
-  const getAisleShelfX = (aisle: number) => (aisle - 1) * 2 + 1;
-
-
   return (
     <div ref={mapContainerRef} className="w-full h-full flex items-center justify-center bg-muted/20 p-4 overflow-auto">
       {items.length === 0 ? (
@@ -157,17 +156,19 @@ export default function StoreMap({ items }: StoreMapProps) {
               )
           })}
           {/* Render path */}
-          {pathPoints.length > 0 && <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
-            <polyline
-              points={pathPoints.map(p => `${p.x * cellSize + cellSize / 2},${p.y * cellSize + cellSize / 2}`).join(' ')}
-              fill="none"
-              stroke="hsl(var(--primary))"
-              strokeWidth="2"
-              strokeDasharray="4,4"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          </svg>}
+          {pathPoints.length > 0 && (
+            <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+                <polyline
+                points={pathPoints.map(p => `${p.x * cellSize + cellSize / 2},${p.y * cellSize + cellSize / 2}`).join(' ')}
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="2"
+                strokeDasharray="4 4"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                />
+            </svg>
+           )}
         </div>
       )}
     </div>
