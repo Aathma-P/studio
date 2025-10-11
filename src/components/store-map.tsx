@@ -55,42 +55,28 @@ export default function StoreMap({ items }: StoreMapProps) {
 
   const pathPoints = React.useMemo(() => {
     if (sortedItems.length === 0) return [];
-    
+
+    const waypoints: MapPoint[] = [
+        ENTRANCE_POS,
+        ...sortedItems.map(item => ({
+            x: getAisleNavX(item.location.aisle),
+            y: item.location.section,
+        })),
+        CHECKOUT_POS,
+    ];
+
     let fullPath: MapPoint[] = [];
-    let currentPos = {x: Math.round(ENTRANCE_POS.x), y: Math.round(ENTRANCE_POS.y)};
 
-    // Path from entrance to first item
-    const firstItemTarget = { x: getAisleNavX(sortedItems[0].location.aisle), y: sortedItems[0].location.section };
-    let segment = findPath(currentPos, firstItemTarget, STORE_LAYOUT);
-    if (segment) {
-      fullPath = fullPath.concat(segment);
-      currentPos = segment[segment.length - 1];
-    }
-    
-    // Path between items
-    for (let i = 0; i < sortedItems.length - 1; i++) {
-        const startItem = sortedItems[i];
-        const endItem = sortedItems[i+1];
-        // Start from the walkable space next to the previous item
-        const startPos = { x: getAisleNavX(startItem.location.aisle), y: startItem.location.section };
-        const endPos = { x: getAisleNavX(endItem.location.aisle), y: endItem.location.section };
+    for (let i = 0; i < waypoints.length - 1; i++) {
+        const startPoint = waypoints[i];
+        const endPoint = waypoints[i+1];
         
-        segment = findPath(startPos, endPos, STORE_LAYOUT);
-        if (segment) {
-            // remove first point to avoid duplicate with previous segment's end
-            fullPath = fullPath.concat(segment.slice(1));
-            currentPos = segment[segment.length - 1];
-        }
-    }
+        const segment = findPath(startPoint, endPoint, STORE_LAYOUT);
 
-    // Path from last item to checkout
-    if (sortedItems.length > 0) {
-        const lastItem = sortedItems[sortedItems.length - 1];
-        const lastItemPos = { x: getAisleNavX(lastItem.location.aisle), y: lastItem.location.section };
-        const checkoutTarget = { x: Math.round(CHECKOUT_POS.x), y: Math.round(CHECKOUT_POS.y) };
-        segment = findPath(lastItemPos, checkoutTarget, STORE_LAYOUT);
         if (segment) {
-            fullPath = fullPath.concat(segment.slice(1));
+            // If it's not the first segment, slice(1) to avoid duplicate points
+            const segmentToAdd = i === 0 ? segment : segment.slice(1);
+            fullPath = fullPath.concat(segmentToAdd);
         }
     }
     
@@ -121,8 +107,8 @@ export default function StoreMap({ items }: StoreMapProps) {
                 className={cn(
                   "absolute",
                   cell === 1 && "bg-neutral-300 dark:bg-neutral-700",
-                  cell === 2 && "bg-green-500/20",
-                  cell === 3 && "bg-blue-500/20",
+                  cell === 2 && "bg-green-500/20", // Entrance
+                  cell === 3 && "bg-blue-500/20", // Checkout
                 )}
                 style={{
                   left: x * cellSize,
@@ -141,7 +127,7 @@ export default function StoreMap({ items }: StoreMapProps) {
               return (
                 <div 
                     key={item.id}
-                    className="absolute flex items-center justify-center bg-primary rounded-full text-primary-foreground text-xs z-10"
+                    className="absolute flex items-center justify-center bg-primary rounded-full text-primary-foreground text-xs font-bold z-10"
                     style={{
                         left: aisleX * cellSize + (cellSize - iconSize) / 2,
                         top: itemY * cellSize + (cellSize - iconSize) / 2,

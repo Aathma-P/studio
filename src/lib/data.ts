@@ -64,5 +64,5 @@ export const AISLE_CENTERS = [
   { aisle: 7, x: 13 }, // Assuming more aisles
 ];
 
-export const ENTRANCE_POS = { x: 0.5, y: 11.5 };
-export const CHECKOUT_POS = { x: 12.5, y: 11.5 };
+export const ENTRANCE_POS = { x: 0, y: 11 };
+export const CHECKOUT_POS = { x: 12, y: 11 };
