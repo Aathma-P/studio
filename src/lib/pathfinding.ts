@@ -22,8 +22,8 @@ function heuristic(a: MapPoint, b: MapPoint) {
 }
 
 export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapPoint[] | null {
-    const startNode = new Node(null, {x: Math.round(start.x), y: Math.round(start.y)});
-    const endNode = new Node(null, {x: Math.round(end.x), y: Math.round(end.y)});
+    const startNode = new Node(null, {x: Math.floor(start.x), y: Math.floor(start.y)});
+    const endNode = new Node(null, {x: Math.floor(end.x), y: Math.floor(end.y)});
 
     const openList: Node[] = [];
     const closedList: Node[] = [];
@@ -109,37 +109,27 @@ const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
 export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instruction[] {
     if (items.length === 0) return [];
 
-    const pathSegments = [];
-    let currentPos = {x: Math.round(ENTRANCE_POS.x), y: Math.round(ENTRANCE_POS.y)};
+    const waypoints: MapPoint[] = [
+        ENTRANCE_POS,
+        ...items.map(item => ({
+            x: getAisleNavX(item.location.aisle),
+            y: item.location.section,
+        })),
+        CHECKOUT_POS,
+    ];
 
-    // Path from entrance to first item
-    const firstItemTarget = { x: getAisleNavX(items[0].location.aisle), y: items[0].location.section };
-    let segment = findPath(currentPos, firstItemTarget, STORE_LAYOUT);
-    if (segment) {
-      pathSegments.push({path: segment, itemId: items[0].id});
-      currentPos = segment[segment.length - 1];
-    }
-    
-    // Path between items
-    for (let i = 0; i < items.length - 1; i++) {
-        const startItem = items[i];
-        const endItem = items[i+1];
-        const startPos = { x: getAisleNavX(startItem.location.aisle), y: startItem.location.section };
-        const endPos = { x: getAisleNavX(endItem.location.aisle), y: endItem.location.section };
-        
-        segment = findPath(startPos, endPos, STORE_LAYOUT);
+    const pathSegments: {path: MapPoint[], itemId: string}[] = [];
+
+    for (let i = 0; i < waypoints.length - 1; i++) {
+        const segment = findPath(waypoints[i], waypoints[i+1], STORE_LAYOUT);
         if (segment) {
-            pathSegments.push({path: segment.slice(1), itemId: endItem.id});
-             currentPos = segment[segment.length - 1];
+            pathSegments.push({
+                path: i === 0 ? segment : segment.slice(1),
+                itemId: items[i]?.id || 'checkout',
+            });
         }
     }
-
-    // Path from last item to checkout
-    const checkoutTarget = { x: Math.round(CHECKOUT_POS.x), y: Math.round(CHECKOUT_POS.y) };
-    segment = findPath(currentPos, checkoutTarget, STORE_LAYOUT);
-    if (segment) {
-        pathSegments.push({path: segment.slice(1), itemId: 'checkout'});
-    }
+    
 
     // --- Convert path segments to instructions ---
     const instructions: Instruction[] = [];
@@ -195,9 +185,9 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
             instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount});
         }
         
-        if (seg.itemId !== 'checkout') {
-             const item = items.find(i => i.id === seg.itemId);
-             instructions.push({ type: 'scan', text: `You've arrived. Scan for ${item?.name}.`, itemId: seg.itemId });
+        const nextItem = items.find(i => i.id === seg.itemId);
+        if (nextItem) {
+             instructions.push({ type: 'scan', text: `You've arrived. Scan for ${nextItem.name}.`, itemId: seg.itemId });
         }
     }
     
