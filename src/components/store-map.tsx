@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { ShoppingListItem, MapPoint } from '@/lib/types';
 import { STORE_LAYOUT, ENTRANCE_POS, CHECKOUT_POS } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { ShoppingBasket } from 'lucide-react';
+import { ShoppingBasket, Navigation } from 'lucide-react';
 
 interface StoreMapProps {
   items: ShoppingListItem[];
@@ -16,6 +16,52 @@ const getAisleX = (aisle: number) => (aisle - 1) * 2 + 1;
 
 export default function StoreMap({ items }: StoreMapProps) {
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
+  const [userPosition, setUserPosition] = React.useState<MapPoint | null>(null);
+  const [userHeading, setUserHeading] = React.useState<number | null>(null);
+
+
+  React.useEffect(() => {
+    // For demonstration, we'll simulate user movement.
+    // In a real app, you'd use navigator.geolocation.watchPosition
+    const simulatedPositions: MapPoint[] = [
+      { x: 0.5, y: 11.5 },
+      { x: 2.5, y: 11.5 },
+      { x: 4.5, y: 10.5 },
+      { x: 4.5, y: 8 },
+      { x: 4.5, y: 6 },
+      { x: 6.5, y: 6 },
+      { x: 8.5, y: 6 },
+      { x: 8.5, y: 4 },
+      { x: 8.5, y: 2 },
+      { x: 10.5, y: 2 },
+      { x: 12.5, y: 4 },
+      { x: 12.5, y: 11.5 },
+    ];
+
+    let index = 0;
+    const interval = setInterval(() => {
+      setUserPosition(simulatedPositions[index]);
+      index = (index + 1) % simulatedPositions.length;
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  React.useEffect(() => {
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      // We use alpha, which is the compass direction
+      if (event.alpha !== null) {
+        setUserHeading(360 - event.alpha); // Invert to match typical map rotation
+      }
+    };
+
+    window.addEventListener('deviceorientation', handleOrientation);
+
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation);
+    };
+  }, []);
+
 
   const sortedItems = React.useMemo(() => {
     return [...items].sort((a, b) => {
@@ -137,6 +183,27 @@ export default function StoreMap({ items }: StoreMapProps) {
                          <circle cx="0" cy="0" r="14" fill="hsl(var(--accent))" />
                          <text x="0" y="5" textAnchor="middle" fill="hsl(var(--accent-foreground))" fontSize="14" fontWeight="bold">OUT</text>
                     </g>
+
+                     {/* User's live location arrow */}
+                    {userPosition && (
+                      <g
+                        transform={`translate(${userPosition.x * CELL_SIZE}, ${userPosition.y * CELL_SIZE})`}
+                        style={{ transition: 'transform 1s linear' }}
+                      >
+                        <g transform={`rotate(${userHeading || 0})`}>
+                          <Navigation
+                            className="text-blue-500 drop-shadow-lg"
+                            fill="currentColor"
+                            strokeWidth={1}
+                            stroke="white"
+                            width={24}
+                            height={24}
+                            style={{ transform: 'translate(-12px, -12px) rotate(-45deg)' }}
+                          />
+                        </g>
+                         <circle cx="0" cy="0" r="16" fill="blue" fillOpacity="0.2" stroke="blue" strokeWidth="1" />
+                      </g>
+                    )}
 
                 </svg>
             </div>
