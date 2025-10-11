@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { Map, Camera, ShoppingBasket, Search } from "lucide-react";
 
 import type { ShoppingListItem, Product } from "@/lib/types";
@@ -56,7 +55,7 @@ export default function Home() {
 
   return (
     <div className="flex h-screen w-full flex-col bg-background">
-      <header className="flex h-16 items-center border-b bg-card px-4 md:px-6 shrink-0">
+      <header className="flex h-16 shrink-0 items-center border-b bg-card px-4 md:px-6">
         <div className="flex items-center gap-2 font-semibold">
           <Icons.logo className="h-6 w-6 text-primary" />
           <span className="text-lg">Aisle Navigator</span>
@@ -91,8 +90,8 @@ export default function Home() {
                   </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-full max-w-sm p-0">
-                <SheetHeader>
-                  <SheetTitle className="sr-only">Shopping List</SheetTitle>
+                <SheetHeader className="p-4 border-b">
+                  <SheetTitle>Shopping List</SheetTitle>
                 </SheetHeader>
                 <ShoppingList
                   items={shoppingList}
@@ -113,7 +112,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="flex-1 md:grid md:grid-cols-[320px_1fr] md:overflow-hidden">
+      <div className="flex flex-1 md:grid md:grid-cols-[320px_1fr] md:overflow-hidden">
         <div className="hidden w-80 shrink-0 border-r md:flex md:flex-col">
           <ShoppingList
             items={shoppingList}
@@ -124,7 +123,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="flex-1 overflow-auto relative">
+        <main className="flex-1 overflow-auto relative">
           <div className="absolute top-4 right-4 z-10 flex items-center gap-2 rounded-lg bg-muted p-1 md:hidden">
               <Button
                   variant={view === "map" ? "secondary" : "ghost"}
@@ -147,8 +146,8 @@ export default function Home() {
           ) : (
             <ArView items={pendingItems} />
           )}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
