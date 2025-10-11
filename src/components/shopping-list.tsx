@@ -47,6 +47,16 @@ export default function ShoppingList({
     );
   }, [searchTerm, allProducts]);
 
+  const groupedProducts = React.useMemo(() => {
+    return allProducts.reduce((acc, product) => {
+      if (!acc[product.category]) {
+        acc[product.category] = [];
+      }
+      acc[product.category].push(product);
+      return acc;
+    }, {} as Record<string, Product[]>);
+  }, [allProducts]);
+
   const handleClearSearch = () => {
     setSearchTerm("");
     setShowSearchResults(false);
@@ -55,7 +65,7 @@ export default function ShoppingList({
 
   const handleAddItem = (product: Product) => {
     onAddItem(product);
-    handleClearSearch();
+    // Do not clear search to allow adding multiple items from search/browse
   };
 
   const pendingItems = items.filter((item) => !item.completed);
@@ -69,7 +79,7 @@ export default function ShoppingList({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             ref={searchInputRef}
-            placeholder="Search for products..."
+            placeholder="Search or browse products..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -117,106 +127,140 @@ export default function ShoppingList({
                 ))
               ) : (
                 <p className="text-sm text-center text-muted-foreground py-4">
-                  No products found.
+                  No products found for "{searchTerm}".
                 </p>
               )}
             </div>
           ) : (
             <>
-              {pendingItems.length > 0 && (
-                <div className="space-y-2">
-                  {pendingItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50"
-                    >
-                      <Checkbox
-                        id={`item-${item.id}`}
-                        checked={item.completed}
-                        onCheckedChange={() => onToggleItem(item.id)}
-                      />
-                      <label
-                        htmlFor={`item-${item.id}`}
-                        className={cn(
-                          "flex-1 text-sm",
-                          item.completed && "line-through text-muted-foreground"
-                        )}
-                      >
-                        {item.name}
-                      </label>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0"
-                        onClick={() => onRemoveItem(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {completedItems.length > 0 && (
+              {items.length > 0 ? (
                 <>
-                  <Separator className="my-4" />
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-muted-foreground">
-                        Completed
-                      </h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowCompleted(!showCompleted)}
-                        className="text-xs"
-                      >
-                        {showCompleted ? "Hide" : "Show"}
-                        {showCompleted ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
-                      </Button>
+                  {pendingItems.length > 0 && (
+                    <div className="space-y-2">
+                      {pendingItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            id={`item-${item.id}`}
+                            checked={item.completed}
+                            onCheckedChange={() => onToggleItem(item.id)}
+                          />
+                          <label
+                            htmlFor={`item-${item.id}`}
+                            className={cn(
+                              "flex-1 text-sm",
+                              item.completed && "line-through text-muted-foreground"
+                            )}
+                          >
+                            {item.name}
+                          </label>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => onRemoveItem(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
+                  )}
 
-                    {showCompleted && completedItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50"
-                      >
-                        <Checkbox
-                          id={`item-${item.id}`}
-                          checked={item.completed}
-                          onCheckedChange={() => onToggleItem(item.id)}
-                        />
-                        <label
-                          htmlFor={`item-${item.id}`}
-                          className={cn(
-                            "flex-1 text-sm",
-                            item.completed &&
-                              "line-through text-muted-foreground"
-                          )}
-                        >
-                          {item.name}
-                        </label>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          onClick={() => onRemoveItem(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                  {completedItems.length > 0 && (
+                    <>
+                      <Separator className="my-4" />
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-medium text-muted-foreground">
+                            Completed
+                          </h3>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowCompleted(!showCompleted)}
+                            className="text-xs"
+                          >
+                            {showCompleted ? "Hide" : "Show"}
+                            {showCompleted ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
+                          </Button>
+                        </div>
+
+                        {showCompleted && completedItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center gap-3 rounded-md p-2 hover:bg-muted/50"
+                          >
+                            <Checkbox
+                              id={`item-${item.id}`}
+                              checked={item.completed}
+                              onCheckedChange={() => onToggleItem(item.id)}
+                            />
+                            <label
+                              htmlFor={`item-${item.id}`}
+                              className={cn(
+                                "flex-1 text-sm",
+                                item.completed &&
+                                  "line-through text-muted-foreground"
+                              )}
+                            >
+                              {item.name}
+                            </label>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={() => onRemoveItem(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  )}
+                   <Separator className="my-4" />
                 </>
-              )}
-
-              {items.length === 0 && (
-                <div className="py-10 text-center text-sm text-muted-foreground">
+              ) : (
+                 <div className="py-2 text-center text-sm text-muted-foreground">
                   Your shopping list is empty.
-                  <br />
-                  Start by searching for a product.
                 </div>
               )}
+             
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Browse All Items
+                </h3>
+                {Object.entries(groupedProducts).map(([category, products]) => (
+                  <div key={category}>
+                    <h4 className="mb-2 text-sm font-semibold">{category}</h4>
+                    <div className="space-y-2">
+                      {products.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between rounded-md p-2 hover:bg-muted"
+                        >
+                          <div className="flex items-center gap-3">
+                            <product.icon className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm">{product.name}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleAddItem(product)}
+                            disabled={items.some((i) => i.id === product.id)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </>
           )}
         </div>
