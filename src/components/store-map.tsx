@@ -21,31 +21,58 @@ export default function StoreMap({ items }: StoreMapProps) {
 
 
   React.useEffect(() => {
-    // For demonstration, we'll simulate user movement.
-    // In a real app, you'd use navigator.geolocation.watchPosition
-    const simulatedPositions: MapPoint[] = [
-      { x: 0.5, y: 11.5 },
-      { x: 2.5, y: 11.5 },
-      { x: 4.5, y: 10.5 },
-      { x: 4.5, y: 8 },
-      { x: 4.5, y: 6 },
-      { x: 6.5, y: 6 },
-      { x: 8.5, y: 6 },
-      { x: 8.5, y: 4 },
-      { x: 8.5, y: 2 },
-      { x: 10.5, y: 2 },
-      { x: 12.5, y: 4 },
-      { x: 12.5, y: 11.5 },
-    ];
+    let watchId: number;
 
-    let index = 0;
-    const interval = setInterval(() => {
-      setUserPosition(simulatedPositions[index]);
-      index = (index + 1) % simulatedPositions.length;
-    }, 2000);
+    const handleSuccess = (position: GeolocationPosition) => {
+      // In a real application, you would have a function to convert
+      // GPS coordinates (latitude, longitude) to your store's map coordinates (x, y).
+      // For this demo, we'll continue to use a simulated path, but triggered by GPS updates.
+      // This demonstrates the integration of the Geolocation API.
+      
+      // A simple simulation of converting coordinates:
+      // This is NOT a real conversion. It's for demonstration purposes.
+      const simulatedX = (position.coords.longitude % 0.001) * 10000;
+      const simulatedY = (position.coords.latitude % 0.001) * 10000;
 
-    return () => clearInterval(interval);
-  }, []);
+      // To keep the arrow within the map for the demo, we'll still use predefined points,
+      // but the *update* is now triggered by real GPS data.
+      if (!userPosition) {
+        setUserPosition({ x: 0.5, y: 11.5 });
+      } else {
+         // This is where you would put your logic to update the position based on the new coordinates.
+         // For now, let's just log it to show it's working.
+         console.log("New position from GPS:", position.coords);
+         // To make it visually move for the demo, let's just cycle through some points on each update.
+         const simulatedPositions: MapPoint[] = [
+            { x: 0.5, y: 11.5 }, { x: 2.5, y: 11.5 }, { x: 4.5, y: 10.5 },
+            { x: 4.5, y: 8 }, { x: 4.5, y: 6 }, { x: 6.5, y: 6 },
+            { x: 8.5, y: 6 }, { x: 8.5, y: 4 }, { x: 8.5, y: 2 },
+            { x: 10.5, y: 2 }, { x: 12.5, y: 4 }, { x: 12.5, y: 11.5 },
+          ];
+         const currentIndex = simulatedPositions.findIndex(p => p.x === userPosition.x && p.y === userPosition.y);
+         const nextIndex = (currentIndex + 1) % simulatedPositions.length;
+         setUserPosition(simulatedPositions[nextIndex]);
+      }
+    };
+
+    const handleError = (error: GeolocationPositionError) => {
+      console.error("Error getting user location:", error.message);
+    };
+
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
+      });
+    }
+
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [userPosition]);
 
   React.useEffect(() => {
     const handleOrientation = (event: DeviceOrientationEvent) => {
