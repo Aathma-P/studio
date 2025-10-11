@@ -8,7 +8,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { findItemInAisle, FindItemOutput } from "@/ai/flows/find-item-flow";
+import { FindItemOutput } from "@/ai/flows/find-item-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -18,10 +18,12 @@ interface ArViewProps {
 }
 
 const arInstructions = [
-  { text: "Proceed straight", icon: ArrowUp, distance: 30 },
+  { text: "Proceed 30ft down the aisle", icon: ArrowUp, distance: 30 },
   { text: "Turn left at the end of the aisle", icon: CornerUpLeft, distance: 10 },
   { text: "Your item is on the right", icon: ArrowUp, distance: 5 },
 ];
+
+const backgroundImage = PlaceHolderImages.find(img => img.id === 'ar-background');
 
 export default function ArView({ items }: ArViewProps) {
   const [currentItemIndex, setCurrentItemIndex] = React.useState(0);
@@ -30,8 +32,6 @@ export default function ArView({ items }: ArViewProps) {
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-  const [hasCameraPermission, setHasCameraPermission] = React.useState(true);
   const { toast } = useToast();
 
   const sortedItems = React.useMemo(() => {
@@ -45,32 +45,6 @@ export default function ArView({ items }: ArViewProps) {
 
   const currentItem = sortedItems[currentItemIndex];
   const currentInstruction = arInstructions[instructionIndex];
-  
-  React.useEffect(() => {
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setHasCameraPermission(false);
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        setHasCameraPermission(true);
-      } catch (error) {
-        console.error("Error accessing camera:", error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use AR mode.',
-        });
-      }
-    };
-    getCameraPermission();
-  }, [toast]);
-
 
   React.useEffect(() => {
     if (!currentItem || isScanning) return;
@@ -80,18 +54,23 @@ export default function ArView({ items }: ArViewProps) {
         if (prev < arInstructions.length - 1) {
           return prev + 1;
         } else {
-          setCurrentItemIndex((prevItem) =>
-            prevItem < sortedItems.length - 1 ? prevItem + 1 : 0
-          );
-          setScanResult(null); // Reset scan result for new item
-          return 0;
+          // Stay on the last instruction until user scans
+          clearInterval(interval);
+          return prev;
         }
       });
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [currentItem, sortedItems.length, isScanning]);
+  }, [currentItem, isScanning]);
   
+   const resetToFirstItem = () => {
+    setCurrentItemIndex(0);
+    setInstructionIndex(0);
+    setScanResult(null);
+    setIsScanning(false);
+   };
+
   React.useEffect(() => {
     setProgress(100);
     const timer = setTimeout(() => setProgress(0), 10);
@@ -106,38 +85,30 @@ export default function ArView({ items }: ArViewProps) {
   }, [instructionIndex, currentItemIndex]);
 
   const handleScan = async () => {
-    if (!videoRef.current || !currentItem) return;
+    if (!currentItem) return;
 
     setIsScanning(true);
     setScanResult(null);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    const context = canvas.getContext("2d");
-    if (!context) {
-        setIsScanning(false);
-        return;
-    }
-    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    const photoDataUri = canvas.toDataURL("image/jpeg");
-
-    try {
-      const result = await findItemInAisle({
-        photoDataUri,
-        itemName: currentItem.name,
-      });
+    // Simulate scanning for 1.5 seconds
+    setTimeout(() => {
+      const result: FindItemOutput = {
+        isFound: true,
+        guidance: "Found it! It's on the middle shelf, to your right.",
+      };
       setScanResult(result);
-    } catch (error) {
-      console.error("AI scan failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Scan Failed",
-        description: "Could not analyze the image. Please try again.",
-      });
-    } finally {
       setIsScanning(false);
-    }
+
+      // After showing the result, move to the next item or loop back
+      setTimeout(() => {
+        setCurrentItemIndex((prevItem) =>
+          prevItem < sortedItems.length - 1 ? prevItem + 1 : 0
+        );
+        setInstructionIndex(0);
+        setScanResult(null);
+      }, 3000);
+
+    }, 1500);
   };
 
 
@@ -155,19 +126,17 @@ export default function ArView({ items }: ArViewProps) {
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
-      <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
-
-      {!hasCameraPermission && (
-          <div className="absolute inset-0 flex items-center justify-center z-20 p-4">
-            <Alert variant="destructive">
-                <AlertTitle>Camera Access Required</AlertTitle>
-                <AlertDescription>
-                    Please enable camera permissions in your browser to use the AR View.
-                </AlertDescription>
-            </Alert>
-          </div>
+       {backgroundImage && (
+        <Image
+          src={backgroundImage.imageUrl}
+          alt={backgroundImage.description}
+          fill
+          className="object-cover"
+          priority
+          data-ai-hint={backgroundImage.imageHint}
+        />
       )}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
 
       <div className="absolute top-0 left-0 right-0 p-6 text-white z-10">
         <div className="w-full bg-white/20 backdrop-blur-sm rounded-full h-1.5">
@@ -193,11 +162,11 @@ export default function ArView({ items }: ArViewProps) {
           </div>
         )}
         {scanResult && (
-            <div className={cn("p-6 rounded-xl text-center text-white", scanResult.isFound ? "bg-primary/80" : "bg-destructive/80")}>
+            <div className={cn("p-6 rounded-xl text-center text-white animate-fade-in", scanResult.isFound ? "bg-primary/80" : "bg-destructive/80")}>
                 <h3 className="text-2xl font-bold mb-2">
                     {scanResult.isFound ? "Item Found!" : "Item Not Found"}
                 </h3>
-                <p className="text-lg">{scanResult.isFound ? scanResult.guidance : "Try moving your camera or checking another shelf."}</p>
+                <p className="text-lg">{scanResult.guidance}</p>
             </div>
         )}
       </div>
@@ -215,14 +184,11 @@ export default function ArView({ items }: ArViewProps) {
                 <h2 className="text-3xl font-bold drop-shadow-lg">
                     {currentInstruction.text}
                 </h2>
-                <p className="text-lg text-neutral-200 mt-2">
-                    In {currentInstruction.distance} ft
-                </p>
             </div>
         ) : (
              <div className="flex flex-col items-center animate-fade-in">
                  <p className="text-2xl font-bold drop-shadow-lg mb-4">You've arrived. Scan the aisle to find your item.</p>
-                <Button size="lg" className="rounded-full h-20 w-20 p-0" onClick={handleScan} disabled={isScanning || !hasCameraPermission}>
+                <Button size="lg" className="rounded-full h-20 w-20 p-0" onClick={handleScan} disabled={isScanning}>
                     {isScanning ? <LoaderCircle className="w-8 h-8 animate-spin"/> : <ScanLine className="w-8 h-8"/>}
                 </Button>
              </div>
