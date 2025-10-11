@@ -10,12 +10,34 @@ interface StoreMapProps {
   items: ShoppingListItem[];
 }
 
-const CELL_SIZE = 40; // in pixels
+const INITIAL_CELL_SIZE = 40; // in pixels
 
 const getAisleX = (aisle: number) => (aisle - 1) * 2 + 1;
 
 export default function StoreMap({ items }: StoreMapProps) {
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
+  const [cellSize, setCellSize] = React.useState(INITIAL_CELL_SIZE);
+
+  React.useLayoutEffect(() => {
+    const mapContainer = mapContainerRef.current;
+    if (!mapContainer) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      const containerWidth = mapContainer.offsetWidth;
+      const mapWidth = STORE_LAYOUT[0].length * INITIAL_CELL_SIZE;
+      
+      if (containerWidth < mapWidth) {
+        const newCellSize = containerWidth / STORE_LAYOUT[0].length;
+        setCellSize(newCellSize);
+      } else {
+        setCellSize(INITIAL_CELL_SIZE);
+      }
+    });
+
+    resizeObserver.observe(mapContainer);
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   const sortedItems = React.useMemo(() => {
     return [...items].sort((a, b) => {
@@ -53,7 +75,7 @@ export default function StoreMap({ items }: StoreMapProps) {
 
 
   return (
-    <div className="w-full h-full flex items-center justify-center overflow-auto bg-muted/20 p-4">
+    <div ref={mapContainerRef} className="w-full h-full flex items-center justify-center bg-muted/20 p-4">
       {items.length === 0 ? (
         <div className="text-center">
           <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -62,12 +84,10 @@ export default function StoreMap({ items }: StoreMapProps) {
         </div>
       ) : (
         <div 
-          ref={mapContainerRef} 
           className="relative"
           style={{
-            width: STORE_LAYOUT[0].length * CELL_SIZE,
-            height: STORE_LAYOUT.length * CELL_SIZE,
-            minWidth: STORE_LAYOUT[0].length * CELL_SIZE,
+            width: STORE_LAYOUT[0].length * cellSize,
+            height: STORE_LAYOUT.length * cellSize,
           }}
         >
           {/* Render layout */}
@@ -82,10 +102,10 @@ export default function StoreMap({ items }: StoreMapProps) {
                   cell === 3 && "bg-blue-500/20",
                 )}
                 style={{
-                  left: x * CELL_SIZE,
-                  top: y * CELL_SIZE,
-                  width: CELL_SIZE,
-                  height: CELL_SIZE,
+                  left: x * cellSize,
+                  top: y * cellSize,
+                  width: cellSize,
+                  height: cellSize,
                 }}
               />
             ))
@@ -94,13 +114,17 @@ export default function StoreMap({ items }: StoreMapProps) {
           {sortedItems.map((item, index) => {
               const aisleX = getAisleX(item.location.aisle);
               const itemY = item.location.section;
+              const iconSize = Math.max(16, cellSize * 0.6);
               return (
                 <div 
                     key={item.id}
-                    className="absolute flex items-center justify-center bg-primary rounded-full text-primary-foreground text-xs w-6 h-6 z-10"
+                    className="absolute flex items-center justify-center bg-primary rounded-full text-primary-foreground text-xs z-10"
                     style={{
-                        left: aisleX * CELL_SIZE + (CELL_SIZE - 24) / 2,
-                        top: itemY * CELL_SIZE + (CELL_SIZE - 24) / 2,
+                        left: aisleX * cellSize + (cellSize - iconSize) / 2,
+                        top: itemY * cellSize + (cellSize - iconSize) / 2,
+                        width: iconSize,
+                        height: iconSize,
+                        fontSize: Math.max(8, cellSize * 0.3)
                     }}
                     title={item.name}
                 >
@@ -111,11 +135,11 @@ export default function StoreMap({ items }: StoreMapProps) {
           {/* Render path */}
           <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
             <polyline
-              points={pathPoints.map(p => `${p.x * CELL_SIZE + CELL_SIZE / 2},${p.y * CELL_SIZE + CELL_SIZE / 2}`).join(' ')}
+              points={pathPoints.map(p => `${p.x * cellSize + cellSize / 2},${p.y * cellSize + cellSize / 2}`).join(' ')}
               fill="none"
               stroke="hsl(var(--primary))"
-              strokeWidth="3"
-              strokeDasharray="5,5"
+              strokeWidth="2"
+              strokeDasharray="4,4"
             />
           </svg>
         </div>
