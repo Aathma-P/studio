@@ -1,25 +1,32 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CornerUpLeft, ShoppingBasket, ScanLine, LoaderCircle, CameraOff } from "lucide-react";
-import type { ShoppingListItem } from "@/lib/types";
+import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight } from "lucide-react";
+import type { ShoppingListItem, MapPoint } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { findItemInAisle, FindItemOutput } from "@/ai/flows/find-item-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
+import { getTurnByTurnInstructions, Instruction } from "@/lib/pathfinding";
+import { ALL_PRODUCTS } from "@/lib/data";
 
 interface ArViewProps {
   items: ShoppingListItem[];
 }
 
-const arInstructions = [
-  { text: "Proceed 30ft down the aisle", icon: ArrowUp, distance: 30 },
-  { text: "Turn left at the end of the aisle", icon: CornerUpLeft, distance: 10 },
-  { text: "Your item is on the right", icon: ArrowUp, distance: 5 },
-];
+const instructionIcons = {
+    "start": ArrowUp,
+    "straight": ArrowUp,
+    "left": CornerUpLeft,
+    "right": CornerUpRight,
+    "turn-left": MoveLeft,
+    "turn-right": MoveRight,
+    "scan": ScanLine,
+    "finish": ShoppingBasket,
+};
+
 
 export default function ArView({ items }: ArViewProps) {
   const [currentItemIndex, setCurrentItemIndex] = React.useState(0);
@@ -28,6 +35,8 @@ export default function ArView({ items }: ArViewProps) {
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
+  const [arInstructions, setArInstructions] = React.useState<Instruction[]>([]);
+
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   
@@ -77,10 +86,25 @@ export default function ArView({ items }: ArViewProps) {
   }, [items]);
 
   const currentItem = sortedItems[currentItemIndex];
+  
+  React.useEffect(() => {
+    if (sortedItems.length > 0) {
+      const instructions = getTurnByTurnInstructions(sortedItems);
+      setArInstructions(instructions);
+    } else {
+      setArInstructions([]);
+    }
+    setCurrentItemIndex(0);
+    setInstructionIndex(0);
+  }, [sortedItems]);
+
+
   const currentInstruction = arInstructions[instructionIndex];
 
   React.useEffect(() => {
-    if (!currentItem || isScanning) return;
+    if (!currentItem || isScanning || !currentInstruction || currentInstruction.type === 'scan') return;
+
+    const intervalTime = (currentInstruction.distance || 5) * 200; // Adjust multiplier for desired speed
 
     const interval = setInterval(() => {
       setInstructionIndex((prev) => {
@@ -91,23 +115,35 @@ export default function ArView({ items }: ArViewProps) {
           return prev;
         }
       });
-    }, 4000);
+    }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [currentItem, isScanning]);
+  }, [currentItem, isScanning, arInstructions, instructionIndex, currentInstruction]);
   
   React.useEffect(() => {
     setProgress(100);
-    const timer = setTimeout(() => setProgress(0), 10);
-    const progressInterval = setInterval(() => {
-       setProgress(100);
-    }, 4000);
+    const intervalTime = (currentInstruction?.distance || 5) * 200;
     
-    return () => {
-        clearTimeout(timer);
-        clearInterval(progressInterval);
+    // Smoothly decrease progress
+    let start: number | null = null;
+    let animationFrameId: number;
+
+    const step = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const elapsed = timestamp - start;
+      const newProgress = Math.max(0, 100 - (elapsed / intervalTime) * 100);
+      setProgress(newProgress);
+      if (newProgress > 0) {
+        animationFrameId = requestAnimationFrame(step);
+      }
     };
-  }, [instructionIndex, currentItemIndex]);
+
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => {
+        cancelAnimationFrame(animationFrameId);
+    };
+  }, [instructionIndex, currentItemIndex, currentInstruction]);
 
   const handleScan = async () => {
     if (!currentItem || !videoRef.current || !canvasRef.current || !hasCameraPermission) return;
@@ -136,10 +172,15 @@ export default function ArView({ items }: ArViewProps) {
         setScanResult(result);
         
         setTimeout(() => {
-            setCurrentItemIndex((prevItem) =>
-              prevItem < sortedItems.length - 1 ? prevItem + 1 : 0
-            );
-            setInstructionIndex(0);
+            // This will move to the next instruction which should be the start of the next leg
+            setInstructionIndex(prev => prev + 1);
+            if (result.isFound) {
+                 // Find which item in the sorted list we just found
+                 const foundItemIndex = sortedItems.findIndex(it => it.id === currentItem.id);
+                 if (foundItemIndex !== -1) {
+                     setCurrentItemIndex(foundItemIndex + 1);
+                 }
+            }
             setScanResult(null);
         }, 4000);
 
@@ -154,8 +195,24 @@ export default function ArView({ items }: ArViewProps) {
     } finally {
         setIsScanning(false);
     }
-
   };
+  
+  const handleNextInstruction = () => {
+    if (isScanning) return;
+
+    if (currentInstruction?.type === 'scan') {
+      handleScan();
+    } else if (instructionIndex < arInstructions.length - 1) {
+      setInstructionIndex(prev => prev + 1);
+      const nextInstruction = arInstructions[instructionIndex + 1];
+      if (nextInstruction?.itemId) {
+         const itemIdx = sortedItems.findIndex(i => i.id === nextInstruction.itemId);
+         if (itemIdx !== -1) {
+            setCurrentItemIndex(itemIdx);
+         }
+      }
+    }
+  }
 
 
   if (hasCameraPermission === null) {
@@ -180,7 +237,7 @@ export default function ArView({ items }: ArViewProps) {
     );
   }
 
-  if (!currentItem) {
+  if (items.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
         <div className="text-center text-white">
@@ -191,9 +248,27 @@ export default function ArView({ items }: ArViewProps) {
       </div>
     );
   }
+  
+  if (!currentInstruction && items.length > 0) {
+     return (
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <div className="text-center text-white">
+          <ShoppingBasket className="mx-auto h-12 w-12 text-green-500" />
+          <h3 className="mt-4 text-lg font-medium">Navigation Complete!</h3>
+          <p className="mt-1 text-sm text-muted-foreground">You've found all items. Proceed to checkout.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentInstruction) {
+      return null;
+  }
+
+  const Icon = instructionIcons[currentInstruction.type as keyof typeof instructionIcons] || ArrowUp;
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden">
+    <div className="relative w-full h-full bg-black overflow-hidden" onClick={handleNextInstruction}>
         <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
         <canvas ref={canvasRef} className="hidden" />
       
@@ -201,17 +276,17 @@ export default function ArView({ items }: ArViewProps) {
 
       <div className="absolute top-0 left-0 right-0 p-6 text-white z-10">
         <div className="w-full bg-white/20 backdrop-blur-sm rounded-full h-1.5">
-           <Progress value={progress} className="h-1.5 transition-all duration-[4000ms] ease-linear" />
+           <Progress value={progress} className="h-1.5 transition-transform duration-200 ease-linear" />
         </div>
         <div className="flex items-center justify-between mt-4">
             <div>
                 <p className="text-sm text-neutral-300">Next item:</p>
-                <p className="text-xl font-bold">{currentItem.name}</p>
+                <p className="text-xl font-bold">{currentItem?.name || "All items found"}</p>
             </div>
-            <div className="text-right">
+             {currentItem && <div className="text-right">
                 <p className="text-sm text-neutral-300">Aisle:</p>
                 <p className="text-xl font-bold">{currentItem.location.aisle}</p>
-            </div>
+            </div>}
         </div>
       </div>
       
@@ -234,21 +309,21 @@ export default function ArView({ items }: ArViewProps) {
 
 
       <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center text-white z-10">
-        {instructionIndex < arInstructions.length -1 ? (
+        {currentInstruction.type !== 'scan' ? (
              <div
                 key={instructionIndex}
                 className="flex flex-col items-center animate-fade-in"
                 >
-                {React.createElement(currentInstruction.icon, {
-                    className: "w-24 h-24 mb-4 drop-shadow-lg",
-                })}
+                <Icon
+                    className="w-24 h-24 mb-4 drop-shadow-lg"
+                />
                 <h2 className="text-3xl font-bold drop-shadow-lg">
                     {currentInstruction.text}
                 </h2>
             </div>
         ) : (
              <div className="flex flex-col items-center animate-fade-in">
-                 <p className="text-2xl font-bold drop-shadow-lg mb-4">You've arrived. Scan the aisle to find your item.</p>
+                 <p className="text-2xl font-bold drop-shadow-lg mb-4">{currentInstruction.text}</p>
                 <Button size="lg" className="rounded-full h-20 w-20 p-0" onClick={handleScan} disabled={isScanning || !hasCameraPermission}>
                     {isScanning ? <LoaderCircle className="w-8 h-8 animate-spin"/> : <ScanLine className="w-8 h-8"/>}
                 </Button>

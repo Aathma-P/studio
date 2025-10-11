@@ -5,6 +5,7 @@ import type { ShoppingListItem, MapPoint } from '@/lib/types';
 import { STORE_LAYOUT, ENTRANCE_POS, CHECKOUT_POS } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { ShoppingBasket } from 'lucide-react';
+import { findPath } from '@/lib/pathfinding';
 
 interface StoreMapProps {
   items: ShoppingListItem[];
@@ -40,6 +41,7 @@ export default function StoreMap({ items }: StoreMapProps) {
   }, []);
 
   const sortedItems = React.useMemo(() => {
+    // This sort determines the order of visiting items
     return [...items].sort((a, b) => {
       if (a.location.aisle !== b.location.aisle) {
         return a.location.aisle - b.location.aisle;
@@ -51,26 +53,43 @@ export default function StoreMap({ items }: StoreMapProps) {
   const pathPoints = React.useMemo(() => {
     if (sortedItems.length === 0) return [];
     
+    let fullPath: MapPoint[] = [];
     let currentPos = ENTRANCE_POS;
-    const points: MapPoint[] = [currentPos];
 
-    sortedItems.forEach(item => {
-      const aisleX = getAisleX(item.location.aisle);
-      const itemY = item.location.section;
-      
-      // Move along top/bottom aisle
-      points.push({ x: aisleX, y: currentPos.y });
-      // Move into the aisle
-      points.push({ x: aisleX, y: itemY });
-      currentPos = { x: aisleX, y: itemY };
-    });
-
-    // Path to checkout
-    const lastItemPos = points[points.length - 1];
-    points.push({ x: lastItemPos.x, y: CHECKOUT_POS.y });
-    points.push(CHECKOUT_POS);
+    // Path from entrance to first item
+    const firstItemTarget = { x: getAisleX(sortedItems[0].location.aisle), y: sortedItems[0].location.section };
+    let segment = findPath(currentPos, firstItemTarget, STORE_LAYOUT);
+    if (segment) {
+      fullPath = fullPath.concat(segment);
+      currentPos = segment[segment.length - 1];
+    }
     
-    return points;
+    // Path between items
+    for (let i = 0; i < sortedItems.length - 1; i++) {
+        const startItem = sortedItems[i];
+        const endItem = sortedItems[i+1];
+        const startPos = { x: getAisleX(startItem.location.aisle), y: startItem.location.section };
+        const endPos = { x: getAisleX(endItem.location.aisle), y: endItem.location.section };
+        
+        segment = findPath(startPos, endPos, STORE_LAYOUT);
+        if (segment) {
+            // remove first point to avoid duplicate with previous segment's end
+            fullPath = fullPath.concat(segment.slice(1));
+            currentPos = segment[segment.length - 1];
+        }
+    }
+
+    // Path from last item to checkout
+    if (sortedItems.length > 0) {
+        const lastItem = sortedItems[sortedItems.length - 1];
+        const lastItemPos = { x: getAisleX(lastItem.location.aisle), y: lastItem.location.section };
+        segment = findPath(lastItemPos, CHECKOUT_POS, STORE_LAYOUT);
+        if (segment) {
+            fullPath = fullPath.concat(segment.slice(1));
+        }
+    }
+    
+    return fullPath;
   }, [sortedItems]);
 
 
@@ -133,15 +152,17 @@ export default function StoreMap({ items }: StoreMapProps) {
               )
           })}
           {/* Render path */}
-          <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+          {pathPoints.length > 0 && <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
             <polyline
               points={pathPoints.map(p => `${p.x * cellSize + cellSize / 2},${p.y * cellSize + cellSize / 2}`).join(' ')}
               fill="none"
               stroke="hsl(var(--primary))"
               strokeWidth="2"
               strokeDasharray="4,4"
+              strokeLinejoin="round"
+              strokeLinecap="round"
             />
-          </svg>
+          </svg>}
         </div>
       )}
     </div>
