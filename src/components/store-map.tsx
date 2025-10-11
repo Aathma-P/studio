@@ -9,17 +9,16 @@ import { findPath } from '@/lib/pathfinding';
 
 interface StoreMapProps {
   items: ShoppingListItem[];
+  simulatedUserPosition?: MapPoint;
 }
 
-const INITIAL_CELL_SIZE = 40; // in pixels
+const INITIAL_CELL_SIZE = 40;
 
-// This function gets the walkable space in the aisle for a given shelf column
-const getAisleNavX = (aisle: number) => aisle * 2;
-// This function gets the X coordinate of the shelf itself
-const getAisleShelfX = (aisle: number) => aisle * 2 - 1;
+const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+const getAisleShelfX = (aisle: number) => (aisle - 1) * 2 + 1;
 
 
-export default function StoreMap({ items }: StoreMapProps) {
+export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps) {
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = React.useState(INITIAL_CELL_SIZE);
 
@@ -29,13 +28,20 @@ export default function StoreMap({ items }: StoreMapProps) {
 
     const resizeObserver = new ResizeObserver(() => {
       const containerWidth = mapContainer.offsetWidth;
-      // Subtract padding from container width for more accurate calculations
-      const containerPadding = parseFloat(getComputedStyle(mapContainer).paddingLeft) + parseFloat(getComputedStyle(mapContainer).paddingRight);
-      const availableWidth = containerWidth - containerPadding;
-      const mapGridWidth = STORE_LAYOUT[0].length;
+      const containerHeight = mapContainer.offsetHeight;
+      const containerPaddingX = parseFloat(getComputedStyle(mapContainer).paddingLeft) + parseFloat(getComputedStyle(mapContainer).paddingRight);
+      const containerPaddingY = parseFloat(getComputedStyle(mapContainer).paddingTop) + parseFloat(getComputedStyle(mapContainer).paddingBottom);
       
-      const newCellSize = availableWidth / mapGridWidth;
-      setCellSize(Math.min(newCellSize, INITIAL_CELL_SIZE));
+      const availableWidth = containerWidth - containerPaddingX;
+      const availableHeight = containerHeight - containerPaddingY;
+
+      const mapGridWidth = STORE_LAYOUT[0].length;
+      const mapGridHeight = STORE_LAYOUT.length;
+      
+      const newCellSizeByWidth = availableWidth / mapGridWidth;
+      const newCellSizeByHeight = availableHeight / mapGridHeight;
+
+      setCellSize(Math.min(newCellSizeByWidth, newCellSizeByHeight, INITIAL_CELL_SIZE));
     });
 
     resizeObserver.observe(mapContainer);
@@ -44,7 +50,6 @@ export default function StoreMap({ items }: StoreMapProps) {
   }, []);
 
   const sortedItems = React.useMemo(() => {
-    // This sort determines the order of visiting items
     return [...items].sort((a, b) => {
       if (a.location.aisle !== b.location.aisle) {
         return a.location.aisle - b.location.aisle;
@@ -59,8 +64,7 @@ export default function StoreMap({ items }: StoreMapProps) {
     const waypoints: MapPoint[] = [
         ENTRANCE_POS,
         ...sortedItems.map(item => ({
-            // Target the navigation path in the aisle next to the shelf
-            x: getAisleNavX(item.location.aisle), 
+            x: getAisleNavX(item.location.aisle),
             y: item.location.section,
         })),
         CHECKOUT_POS,
@@ -75,7 +79,6 @@ export default function StoreMap({ items }: StoreMapProps) {
         const segment = findPath(startPoint, endPoint, STORE_LAYOUT);
 
         if (segment) {
-            // If it's not the first segment, slice(1) to avoid duplicate points
             const segmentToAdd = i === 0 ? segment : segment.slice(1);
             fullPath = fullPath.concat(segmentToAdd);
         }
@@ -84,9 +87,11 @@ export default function StoreMap({ items }: StoreMapProps) {
     return fullPath;
   }, [sortedItems]);
 
+  const userIconSize = cellSize;
+
   return (
-    <div ref={mapContainerRef} className="w-full h-full flex items-center justify-center bg-muted/20 p-4 overflow-auto">
-      {items.length === 0 ? (
+    <div ref={mapContainerRef} className="w-full h-full flex items-center justify-center bg-muted/20 p-4 overflow-hidden">
+      {items.length === 0 && !simulatedUserPosition ? (
         <div className="text-center">
           <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
           <h3 className="mt-4 text-lg font-medium">Map is ready</h3>
@@ -155,6 +160,20 @@ export default function StoreMap({ items }: StoreMapProps) {
                 strokeLinecap="round"
                 />
             </svg>
+           )}
+           {/* Render simulated user position */}
+           {simulatedUserPosition && (
+            <div
+              className="absolute z-20 flex items-center justify-center transition-all duration-300 ease-linear"
+              style={{
+                left: simulatedUserPosition.x * cellSize + (cellSize - userIconSize) / 2,
+                top: simulatedUserPosition.y * cellSize + (cellSize - userIconSize) / 2,
+                width: userIconSize,
+                height: userIconSize,
+              }}
+            >
+              <div className="w-3/5 h-3/5 rounded-full bg-blue-500 border-2 border-white shadow-lg" />
+            </div>
            )}
         </div>
       )}

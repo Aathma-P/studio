@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getTurnByTurnInstructions, Instruction } from "@/lib/pathfinding";
 import { ALL_PRODUCTS } from "@/lib/data";
+import { useOrientation } from "@/hooks/use-mobile";
+import StoreMap from "./store-map";
 
 interface ArViewProps {
   items: ShoppingListItem[];
@@ -41,6 +43,7 @@ export default function ArView({ items }: ArViewProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   
   const { toast } = useToast();
+  const orientation = useOrientation();
 
   React.useEffect(() => {
     const getCameraPermission = async () => {
@@ -222,8 +225,8 @@ export default function ArView({ items }: ArViewProps) {
     }
   }
 
-
-  if (hasCameraPermission === null) {
+  // Show a loading spinner until camera permission is resolved or orientation is known
+  if (hasCameraPermission === null || orientation === 'unknown') {
       return (
           <div className="w-full h-full flex items-center justify-center bg-black">
               <LoaderCircle className="w-12 h-12 text-white animate-spin" />
@@ -231,7 +234,7 @@ export default function ArView({ items }: ArViewProps) {
       )
   }
 
-  if (hasCameraPermission === false) {
+  if (hasCameraPermission === false && orientation === 'portrait') {
     return (
         <div className="w-full h-full flex items-center justify-center bg-black p-4">
             <Alert variant="destructive" className="max-w-sm">
@@ -269,6 +272,16 @@ export default function ArView({ items }: ArViewProps) {
     );
   }
 
+  if (orientation === 'landscape') {
+    // Determine the current simulated position based on instructions traversed
+    const currentPosition = currentInstruction.pathPoint;
+
+    return (
+      <div className="w-full h-full bg-background">
+        <StoreMap items={sortedItems} simulatedUserPosition={currentPosition} />
+      </div>
+    )
+  }
 
   const Icon = instructionIcons[currentInstruction.type as keyof typeof instructionIcons] || ArrowUp;
   const nextItemToFind = sortedItems[currentItemIndex];
