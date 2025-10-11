@@ -13,8 +13,8 @@ interface StoreMapProps {
 
 const INITIAL_CELL_SIZE = 40; // in pixels
 
-// This function gets the walkable space next to an aisle
-const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+// This function gets the walkable space on the LEFT of an aisle's shelf
+const getAisleNavX = (aisle: number) => (aisle - 1) * 2;
 // This function gets the shelf space for an aisle
 const getAisleShelfX = (aisle: number) => (aisle - 1) * 2 + 1;
 
@@ -59,7 +59,8 @@ export default function StoreMap({ items }: StoreMapProps) {
     const waypoints: MapPoint[] = [
         ENTRANCE_POS,
         ...sortedItems.map(item => ({
-            x: getAisleNavX(item.location.aisle),
+            // Target the navigation path to the LEFT of the aisle shelf
+            x: getAisleNavX(item.location.aisle), 
             y: item.location.section,
         })),
         CHECKOUT_POS,

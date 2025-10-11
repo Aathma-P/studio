@@ -71,22 +71,23 @@ export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapP
             }
 
             const newNode = new Node(currentNode, nodePos);
+            
+            if (closedList.some(closedChild => closedChild.equals(newNode))) {
+                continue;
+            }
+
+            newNode.g = currentNode.g + 1;
+            newNode.h = heuristic(newNode.pos, endNode.pos);
+            newNode.f = newNode.g + newNode.h;
+
+            if (openList.some(openNode => newNode.equals(openNode) && newNode.g >= openNode.g)) {
+                continue;
+            }
+
             children.push(newNode);
         }
 
         for (const child of children) {
-            if (closedList.some(closedChild => closedChild.equals(child))) {
-                continue;
-            }
-
-            child.g = currentNode.g + 1;
-            child.h = heuristic(child.pos, endNode.pos);
-            child.f = child.g + child.h;
-
-            if (openList.some(openNode => child.equals(openNode) && child.g >= openNode.g)) {
-                continue;
-            }
-
             openList.push(child);
         }
     }
@@ -103,7 +104,7 @@ export interface Instruction {
     itemId?: string;
 }
 
-const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+const getAisleNavX = (aisle: number) => (aisle - 1) * 2;
 
 
 export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instruction[] {
