@@ -47,16 +47,25 @@ export default function StoreMap({ items }: StoreMapProps) {
             { x: 0.5, y: 11.5 }, { x: 2.5, y: 11.5 }, { x: 4.5, y: 10.5 },
             { x: 4.5, y: 8 }, { x: 4.5, y: 6 }, { x: 6.5, y: 6 },
             { x: 8.5, y: 6 }, { x: 8.5, y: 4 }, { x: 8.5, y: 2 },
-            { x: 10.5, y: 2 }, { x: 12.5, y: 4 }, { x: 12.5, y: 11.5 },
-          ];
+            { x: 6.5, y: 2 }, { x: 4.5, y: 2 }, { x: 2.5, y: 2 },
+            { x: 0.5, y: 2 }, { x: 0.5, y: 5 }, { x: 0.5, y: 8 },
+            { x: 0.5, y: 11.5 }
+         ];
          const currentIndex = simulatedPositions.findIndex(p => p.x === userPosition.x && p.y === userPosition.y);
          const nextIndex = (currentIndex + 1) % simulatedPositions.length;
          setUserPosition(simulatedPositions[nextIndex]);
       }
+      if (position.coords.heading !== null) {
+          setUserHeading(position.coords.heading);
+      }
     };
 
     const handleError = (error: GeolocationPositionError) => {
-      console.error("Error getting user location:", error.message);
+      console.warn(`ERROR(${error.code}): ${error.message}`);
+      // Fallback to initial position if GPS fails
+      if (!userPosition) {
+        setUserPosition(ENTRANCE_POS);
+      }
     };
 
     if (navigator.geolocation) {
@@ -67,27 +76,26 @@ export default function StoreMap({ items }: StoreMapProps) {
       });
     }
 
-    return () => {
-      if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, [userPosition]);
-
-  React.useEffect(() => {
+    // Device orientation for compass heading
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      // We use alpha, which is the compass direction
-      if (event.alpha !== null) {
-        setUserHeading(360 - event.alpha); // Invert to match typical map rotation
-      }
+        if (event.webkitCompassHeading) {
+            // Apple devices
+            setUserHeading(event.webkitCompassHeading);
+        } else if (event.alpha !== null) {
+            // Standard devices
+            setUserHeading(360 - event.alpha);
+        }
     };
 
     window.addEventListener('deviceorientation', handleOrientation);
 
     return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
       window.removeEventListener('deviceorientation', handleOrientation);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const sortedItems = React.useMemo(() => {
@@ -99,143 +107,113 @@ export default function StoreMap({ items }: StoreMapProps) {
     });
   }, [items]);
 
-  const routePoints = React.useMemo(() => {
-    const points: MapPoint[] = [ENTRANCE_POS];
-    let lastAisle = -1;
-
-    sortedItems.forEach((item) => {
-      const aisleX = getAisleX(item.location.aisle);
-      const itemY = item.location.section + 0.5;
-
-      if (item.location.aisle !== lastAisle) {
-        if(lastAisle !== -1) {
-            points.push({ x: getAisleX(lastAisle) + 0.5, y: 10.5 });
-        }
-        points.push({ x: aisleX + 0.5, y: 10.5 });
-        points.push({ x: aisleX + 0.5, y: itemY });
-      } else {
-        points.push({ x: aisleX + 0.5, y: itemY });
-      }
-      lastAisle = item.location.aisle;
-    });
+  const pathPoints = React.useMemo(() => {
+    if (sortedItems.length === 0) return [];
     
-    if (lastAisle !== -1) {
-        points.push({ x: getAisleX(lastAisle) + 0.5, y: 10.5 });
-    }
-    points.push({ x: CHECKOUT_POS.x -1, y: 10.5 });
-    points.push(CHECKOUT_POS);
+    let currentPos = ENTRANCE_POS;
+    const points: MapPoint[] = [currentPos];
 
+    sortedItems.forEach(item => {
+      const aisleX = getAisleX(item.location.aisle);
+      const itemY = item.location.section;
+      
+      // Move along top/bottom aisle
+      points.push({ x: aisleX, y: currentPos.y });
+      // Move into the aisle
+      points.push({ x: aisleX, y: itemY });
+      currentPos = { x: aisleX, y: itemY };
+    });
+
+    // Path to checkout
+    const lastItemPos = points[points.length - 1];
+    points.push({ x: lastItemPos.x, y: CHECKOUT_POS.y });
+    points.push(CHECKOUT_POS);
+    
     return points;
   }, [sortedItems]);
-  
-  const pathData = React.useMemo(() => {
-    if (routePoints.length < 2) return '';
-    const path = routePoints.map((p) => `${p.x * CELL_SIZE},${p.y * CELL_SIZE}`).join('L');
-    return `M${path}`;
-  }, [routePoints]);
 
-  const mapWidth = STORE_LAYOUT[0].length * CELL_SIZE;
-  const mapHeight = STORE_LAYOUT.length * CELL_SIZE;
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-muted/30 p-4 md:p-8 overflow-auto">
-        {items.length === 0 ? (
-             <div className="text-center">
-                <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-medium">Map is ready</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Add items to your shopping list to see the optimal route.</p>
-            </div>
-        ) : (
-            <div
-                ref={mapContainerRef}
-                className="relative shrink-0"
-                style={{ width: mapWidth, height: mapHeight }}
-            >
-                <div className="grid grid-cols-13" style={{ gridTemplateColumns: `repeat(${STORE_LAYOUT[0].length}, minmax(0, 1fr))` }}>
-                {STORE_LAYOUT.flat().map((cell, i) => (
-                    <div
-                    key={i}
-                    className={cn('w-full h-10 border border-border/20', {
-                        'bg-card': cell === 0,
-                        'bg-muted/50': cell === 1,
-                        'bg-green-200': cell === 2,
-                        'bg-blue-200': cell === 3,
-                    })}
-                    />
-                ))}
+    <div className="w-full h-full flex items-center justify-center overflow-auto bg-muted/20">
+      {items.length === 0 ? (
+        <div className="text-center">
+          <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-4 text-lg font-medium">Map is ready</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Add items to your list to see the optimal route.</p>
+        </div>
+      ) : (
+        <div 
+          ref={mapContainerRef} 
+          className="relative origin-top-left"
+          style={{
+            width: STORE_LAYOUT[0].length * CELL_SIZE,
+            height: STORE_LAYOUT.length * CELL_SIZE,
+          }}
+        >
+          {/* Render layout */}
+          {STORE_LAYOUT.map((row, y) => (
+            row.map((cell, x) => (
+              <div
+                key={`${y}-${x}`}
+                className={cn(
+                  "absolute",
+                  cell === 1 && "bg-neutral-300 dark:bg-neutral-700",
+                  cell === 2 && "bg-green-500/20",
+                  cell === 3 && "bg-blue-500/20",
+                )}
+                style={{
+                  left: x * CELL_SIZE,
+                  top: y * CELL_SIZE,
+                  width: CELL_SIZE,
+                  height: CELL_SIZE,
+                }}
+              />
+            ))
+          ))}
+          {/* Render item locations */}
+          {sortedItems.map((item, index) => {
+              const aisleX = getAisleX(item.location.aisle);
+              const itemY = item.location.section;
+              const isFirst = index === 0;
+              return (
+                <div 
+                    key={item.id}
+                    className="absolute flex items-center justify-center bg-primary rounded-full text-primary-foreground text-xs w-6 h-6"
+                    style={{
+                        left: aisleX * CELL_SIZE + CELL_SIZE / 4,
+                        top: itemY * CELL_SIZE + CELL_SIZE / 4,
+                    }}
+                >
+                    {index + 1}
                 </div>
-                <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ width: mapWidth, height: mapHeight }}>
-                    {/* Route path */}
-                    <path
-                        d={pathData}
-                        fill="none"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="path-animate"
-                    />
-                    <style jsx>{`
-                        .path-animate {
-                            stroke-dasharray: 1000;
-                            stroke-dashoffset: 1000;
-                            animation: draw 5s linear forwards;
-                        }
-                        @keyframes draw {
-                            to {
-                            stroke-dashoffset: 0;
-                            }
-                        }
-                    `}</style>
-                    
-                    {/* Item markers */}
-                    {sortedItems.map((item, index) => {
-                        const aisleX = getAisleX(item.location.aisle);
-                        const itemY = item.location.section + 0.5;
-                        const Icon = item.icon;
-                        return (
-                            <g key={item.id} transform={`translate(${aisleX * CELL_SIZE}, ${itemY * CELL_SIZE})`}>
-                                <circle cx="0" cy="0" r="14" fill="hsl(var(--primary))" />
-                                <text x="0" y="4" textAnchor="middle" fill="hsl(var(--primary-foreground))" fontSize="12" fontWeight="bold">{index + 1}</text>
-                            </g>
-                        );
-                    })}
+              )
+          })}
+          {/* Render path */}
+          <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+            <polyline
+              points={pathPoints.map(p => `${p.x * CELL_SIZE + CELL_SIZE / 2},${p.y * CELL_SIZE + CELL_SIZE / 2}`).join(' ')}
+              fill="none"
+              stroke="hsl(var(--primary))"
+              strokeWidth="3"
+              strokeDasharray="5,5"
+            />
+          </svg>
 
-                    {/* Start and End markers */}
-                    <g transform={`translate(${ENTRANCE_POS.x * CELL_SIZE}, ${ENTRANCE_POS.y * CELL_SIZE})`}>
-                         <circle cx="0" cy="0" r="14" fill="hsl(var(--accent))" />
-                         <text x="0" y="5" textAnchor="middle" fill="hsl(var(--accent-foreground))" fontSize="14" fontWeight="bold">IN</text>
-                    </g>
-                     <g transform={`translate(${CHECKOUT_POS.x * CELL_SIZE}, ${CHECKOUT_POS.y * CELL_SIZE})`}>
-                         <circle cx="0" cy="0" r="14" fill="hsl(var(--accent))" />
-                         <text x="0" y="5" textAnchor="middle" fill="hsl(var(--accent-foreground))" fontSize="14" fontWeight="bold">OUT</text>
-                    </g>
-
-                     {/* User's live location arrow */}
-                    {userPosition && (
-                      <g
-                        transform={`translate(${userPosition.x * CELL_SIZE}, ${userPosition.y * CELL_SIZE})`}
-                        style={{ transition: 'transform 1s linear' }}
-                      >
-                        <g transform={`rotate(${userHeading || 0})`}>
-                          <Navigation
-                            className="text-blue-500 drop-shadow-lg"
-                            fill="currentColor"
-                            strokeWidth={1}
-                            stroke="white"
-                            width={24}
-                            height={24}
-                            style={{ transform: 'translate(-12px, -12px) rotate(-45deg)' }}
-                          />
-                        </g>
-                         <circle cx="0" cy="0" r="16" fill="blue" fillOpacity="0.2" stroke="blue" strokeWidth="1" />
-                      </g>
-                    )}
-
-                </svg>
-            </div>
-        )}
-
+          {/* User Location Arrow */}
+          {userPosition && (
+              <div 
+                className="absolute transition-all duration-500 ease-linear"
+                style={{
+                    left: userPosition.x * CELL_SIZE,
+                    top: userPosition.y * CELL_SIZE,
+                    transform: `translate(${CELL_SIZE/2}px, ${CELL_SIZE/2}px) rotate(${userHeading || 0}deg)`
+                }}
+              >
+                  <Navigation className="text-blue-500 w-5 h-5 -translate-x-1/2 -translate-y-1/2" fill="currentColor" />
+              </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
