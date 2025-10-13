@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -18,6 +19,7 @@ import { ENTRANCE_POS } from "@/lib/data";
 
 interface ArViewProps {
   items: ShoppingListItem[];
+  onItemScannedAndFound: (itemId: string) => void;
 }
 
 const instructionIcons = {
@@ -32,7 +34,7 @@ const instructionIcons = {
 };
 
 
-export default function ArView({ items }: ArViewProps) {
+export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const [arInstructions, setArInstructions] = React.useState<Instruction[]>([]);
   const [instructionIndex, setInstructionIndex] = React.useState(0);
   const [progress, setProgress] = React.useState(100);
@@ -52,7 +54,7 @@ export default function ArView({ items }: ArViewProps) {
 
   const sortedItems = React.useMemo(() => {
     if (items.length === 0) return [];
-
+  
     const itemsWithNavPoints = items.map(item => ({
       ...item,
       navPoint: {
@@ -62,34 +64,34 @@ export default function ArView({ items }: ArViewProps) {
     }));
 
     const findShortestGreedyPath = (itemsToVisit: typeof itemsWithNavPoints): typeof itemsWithNavPoints => {
-        let unvisited = [...itemsToVisit];
-        let orderedPath: typeof itemsWithNavPoints = [];
-        let currentPoint = ENTRANCE_POS;
+      let unvisited = [...itemsToVisit];
+      let orderedPath: typeof itemsWithNavPoints = [];
+      let currentPoint = ENTRANCE_POS;
 
-        while (unvisited.length > 0) {
-            let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
-            let shortestDistance = Infinity;
+      while (unvisited.length > 0) {
+        let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
+        let shortestDistance = Infinity;
 
-            for (const item of unvisited) {
-                const path = findPath(currentPoint, item.navPoint);
-                const distance = path ? path.length : Infinity;
-                if (distance < shortestDistance) {
-                    shortestDistance = distance;
-                    nearestItem = item;
-                }
-            }
-
-            if (nearestItem) {
-                orderedPath.push(nearestItem);
-                currentPoint = nearestItem.navPoint;
-                unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
-            } else {
-                break;
+        for (const item of unvisited) {
+            const path = findPath(currentPoint, item.navPoint);
+            const distance = path ? path.length : Infinity;
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                nearestItem = item;
             }
         }
-        return orderedPath;
-    };
 
+        if (nearestItem) {
+          orderedPath.push(nearestItem);
+          currentPoint = nearestItem.navPoint;
+          unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
+        } else {
+          break;
+        }
+      }
+      return orderedPath;
+    };
+  
     return findShortestGreedyPath(itemsWithNavPoints);
   }, [items]);
 
@@ -149,15 +151,13 @@ export default function ArView({ items }: ArViewProps) {
     setInstructionIndex(prev => {
         if (prev < arInstructions.length - 1) {
             const nextIndex = prev + 1;
-            const nextInstruction = arInstructions[nextIndex];
             
-            // Update current item when we pass a scan instruction
             if (arInstructions[prev].type === 'scan') {
                 const currentItemIndex = sortedItems.findIndex(it => it.id === arInstructions[prev].itemId);
                 if (currentItemIndex !== -1 && currentItemIndex < sortedItems.length - 1) {
                     setCurrentItem(sortedItems[currentItemIndex + 1]);
                 } else {
-                    setCurrentItem(null); // All items are done, navigating to checkout
+                    setCurrentItem(null); 
                 }
             }
 
@@ -167,7 +167,6 @@ export default function ArView({ items }: ArViewProps) {
     });
   }, [arInstructions, sortedItems]);
 
-  // Effect for handling automatic advancement of instructions (e.g., "straight")
   React.useEffect(() => {
     if (!currentInstruction || isScanning || scanResult) return;
   
@@ -180,7 +179,6 @@ export default function ArView({ items }: ArViewProps) {
     }
   }, [currentInstruction, isScanning, scanResult, goToNextInstruction]);
   
-  // Effect for managing the progress bar for "straight" instructions
   React.useEffect(() => {
     setProgress(100);
     if (!currentInstruction || currentInstruction.type !== 'straight' || isScanning) return;
@@ -227,6 +225,10 @@ export default function ArView({ items }: ArViewProps) {
             photoDataUri,
             itemName: itemToScan.name,
         });
+
+        if (result.isFound) {
+            onItemScannedAndFound(itemToScan.id);
+        }
 
         setScanResult(result);
         

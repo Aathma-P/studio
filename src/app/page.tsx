@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -91,7 +92,7 @@ export default function Home() {
             {view === "map" ? (
               <StoreMap items={pendingItems} />
             ) : (
-              <ArView items={pendingItems} />
+              <ArView items={pendingItems} onItemScannedAndFound={handleToggleItem} />
             )}
            </div>
 
@@ -108,7 +109,7 @@ export default function Home() {
                     />
                 )}
                 {mobileView === 'map' && <StoreMap items={pendingItems} />}
-                {mobileView === 'ar' && <ArView items={pendingItems} />}
+                {mobileView === 'ar' && <ArView items={pendingItems} onItemScannedAndFound={handleToggleItem} />}
              </div>
 
             <div className="absolute bottom-0 left-0 right-0 flex h-16 shrink-0 items-center justify-around border-t bg-card">
