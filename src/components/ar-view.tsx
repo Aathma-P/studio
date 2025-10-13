@@ -95,6 +95,10 @@ export default function ArView({ items }: ArViewProps) {
 
   const currentInstruction = arInstructions[instructionIndex];
   const currentItem = sortedItems.find(it => it.id === currentInstruction?.itemId) ?? sortedItems[0];
+  const itemToScan = React.useMemo(() => {
+    if (currentInstruction?.type !== 'scan') return null;
+    return sortedItems.find(it => it.id === currentInstruction.itemId);
+  }, [currentInstruction, sortedItems]);
 
 
   const goToNextInstruction = React.useCallback(() => {
@@ -144,7 +148,7 @@ export default function ArView({ items }: ArViewProps) {
   }, [instructionIndex, currentInstruction, isScanning]);
 
   const handleScan = async () => {
-    if (!currentItem || !videoRef.current || !canvasRef.current || !hasCameraPermission) return;
+    if (!itemToScan || !videoRef.current || !canvasRef.current || !hasCameraPermission) return;
 
     setIsScanning(true);
     setScanResult(null);
@@ -164,7 +168,7 @@ export default function ArView({ items }: ArViewProps) {
     try {
         const result = await findItemInAisle({
             photoDataUri,
-            itemName: currentItem.name,
+            itemName: itemToScan.name,
         });
 
         setScanResult(result);
@@ -295,10 +299,10 @@ export default function ArView({ items }: ArViewProps) {
       
        {/* Scanning UI */}
        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-full px-8">
-        {isScanning && !scanResult && (
+        {isScanning && !scanResult && itemToScan && (
           <div className="flex flex-col items-center justify-center text-white bg-black/50 backdrop-blur-md p-6 rounded-xl">
             <LoaderCircle className="w-12 h-12 animate-spin mb-4" />
-            <p className="text-lg font-bold">Scanning for {currentItem.name}...</p>
+            <p className="text-lg font-bold">Scanning for {itemToScan.name}...</p>
           </div>
         )}
         {scanResult && (
@@ -313,7 +317,7 @@ export default function ArView({ items }: ArViewProps) {
 
       {/* Main Instruction UI */}
       <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center text-white z-10">
-        {currentInstruction.type === 'scan' ? (
+        {currentInstruction.type === 'scan' && itemToScan ? (
              <div className="flex flex-col items-center animate-fade-in">
                  <p className="text-2xl font-bold drop-shadow-lg mb-4">{currentInstruction.text}</p>
                 <Button size="lg" className="rounded-full h-20 w-20 p-0" onClick={handleScan} disabled={isScanning || !hasCameraPermission}>
