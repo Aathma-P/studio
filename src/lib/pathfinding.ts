@@ -63,8 +63,8 @@ export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapP
                 continue;
             }
 
-            if (grid[nodePos.y][nodePos.x] === 1) { // 1 is a shelf (obstacle)
-                continue;
+            if (grid[nodePos.y][nodePos.x] !== 0 && grid[nodePos.y][nodePos.x] !== 2 && grid[nodePos.y][nodePos.x] !== 3) {
+                 continue;
             }
             
             const newNode = new Node(currentNode, nodePos);
@@ -161,7 +161,7 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         
         if (newDirection !== currentDirection) {
             if (straightCount > 0) {
-                 instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p1, itemId: waypoint?.item?.id});
+                 instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p1, itemId: instructions[instructions.length - 1].itemId});
             }
             
             let turnText = "";
@@ -185,14 +185,15 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
              straightCount++;
         }
 
-        if (waypoint?.item && waypoint.point.x === p2.x && waypoint.point.y === p2.y) {
+        const destinationWaypoint = waypoints.find(wp => wp.point.x === p2.x && wp.point.y === p2.y);
+        if (destinationWaypoint?.item) {
              if (straightCount > 1) {
-                instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount-1, pathPoint: p1, itemId: waypoint.item.id});
+                instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount-1, pathPoint: p1, itemId: destinationWaypoint.item.id});
              }
             
-            const item = waypoint.item;
+            const item = destinationWaypoint.item;
             const itemShelfX = (item.location.aisle - 1) * 2 + 1;
-            const turnDirection = itemShelfX < waypoint.point.x ? 'left' : 'right';
+            const turnDirection = itemShelfX < destinationWaypoint.point.x ? 'left' : 'right';
             const turnInstructionType = turnDirection === 'left' ? 'turn-left' : 'turn-right';
             
             instructions.push({ type: turnInstructionType, text: `Item is on your ${turnDirection}`, pathPoint: p2, itemId: item.id });

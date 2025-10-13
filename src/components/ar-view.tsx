@@ -10,7 +10,7 @@ import { findItemInAisle, FindItemOutput } from "@/ai/flows/find-item-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getTurnByTurnInstructions, Instruction } from "@/lib/pathfinding";
-import { useOrientation } from "@/hooks/use-mobile";
+import { useIsMobile, useOrientation } from "@/hooks/use-mobile";
 import StoreMap from "./store-map";
 
 interface ArViewProps {
@@ -42,6 +42,7 @@ export default function ArView({ items }: ArViewProps) {
   
   const { toast } = useToast();
   const orientation = useOrientation();
+  const isMobile = useIsMobile();
 
   React.useEffect(() => {
     const getCameraPermission = async () => {
@@ -251,16 +252,11 @@ export default function ArView({ items }: ArViewProps) {
     );
   }
 
-  if (orientation === 'landscape') {
+  if (isMobile && orientation === 'landscape') {
     const currentPosition = currentInstruction?.pathPoint;
-    const itemsToMap = currentInstruction.itemId 
-        ? sortedItems.filter(item => {
-            const currentItemIndex = sortedItems.findIndex(it => it.id === currentInstruction.itemId);
-            const thisItemIndex = sortedItems.findIndex(it => it.id === item.id);
-            return thisItemIndex >= currentItemIndex;
-        })
-        : sortedItems;
-
+    const currentItemIndex = sortedItems.findIndex(it => it.id === currentInstruction.itemId);
+    const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
+    
     return (
       <div className="w-full h-full bg-background">
         <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
