@@ -50,12 +50,71 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
   }, []);
 
   const sortedItems = React.useMemo(() => {
-    return [...items].sort((a, b) => {
-      if (a.location.aisle !== b.location.aisle) {
-        return a.location.aisle - b.location.aisle;
+    if (items.length === 0) return [];
+  
+    const itemsWithNavPoints = items.map(item => ({
+      ...item,
+      navPoint: {
+        x: getAisleNavX(item.location.aisle),
+        y: item.location.section,
       }
-      return a.location.section - b.location.section;
-    });
+    }));
+  
+    const calculateTotalDistance = (path: typeof itemsWithNavPoints): number => {
+      let totalDist = 0;
+      let lastPoint = ENTRANCE_POS;
+      
+      const waypoints = [lastPoint, ...path.map(p => p.navPoint), CHECKOUT_POS];
+      
+      for(let i=0; i<waypoints.length-1; i++) {
+        const segment = findPath(waypoints[i], waypoints[i+1], STORE_LAYOUT);
+        totalDist += segment?.length || Infinity;
+      }
+      return totalDist;
+    };
+  
+    const findShortestPath = (itemsToVisit: typeof itemsWithNavPoints): typeof itemsWithNavPoints => {
+      let shortestPath: typeof itemsWithNavPoints = [];
+      let minDistance = Infinity;
+  
+      const permute = (arr: typeof itemsWithNavPoints, l: number, r: number) => {
+        if (l === r) {
+          const currentDistance = calculateTotalDistance(arr);
+          if (currentDistance < minDistance) {
+            minDistance = currentDistance;
+            shortestPath = [...arr];
+          }
+        } else {
+          for (let i = l; i <= r; i++) {
+            [arr[l], arr[i]] = [arr[i], arr[l]];
+            permute(arr, l + 1, r);
+            [arr[l], arr[i]] = [arr[i], arr[l]]; // backtrack
+          }
+        }
+      };
+      // For performance, only use permutation for small lists.
+      // For larger lists, a greedy approach is better than nothing.
+      if (itemsToVisit.length <= 7) { 
+        permute(itemsToVisit, 0, itemsToVisit.length - 1);
+      } else { // Greedy approach for larger lists
+        let unvisited = [...itemsToVisit];
+        let currentPoint = ENTRANCE_POS;
+        while(unvisited.length > 0) {
+          unvisited.sort((a,b) => {
+            const distA = findPath(currentPoint, a.navPoint, STORE_LAYOUT)?.length || Infinity;
+            const distB = findPath(currentPoint, b.navPoint, STORE_LAYOUT)?.length || Infinity;
+            return distA - distB;
+          });
+          const nextItem = unvisited.shift()!;
+          shortestPath.push(nextItem);
+          currentPoint = nextItem.navPoint;
+        }
+      }
+      
+      return shortestPath;
+    };
+  
+    return findShortestPath(itemsWithNavPoints);
   }, [items]);
 
   const pathPoints = React.useMemo(() => {
@@ -79,8 +138,13 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
         const segment = findPath(startPoint, endPoint, STORE_LAYOUT);
 
         if (segment) {
+            // The first segment includes the start point, subsequent ones shouldn't to avoid duplicates
             const segmentToAdd = i === 0 ? segment : segment.slice(1);
             fullPath = fullPath.concat(segmentToAdd);
+        } else {
+          // If any segment fails, the whole path is invalid.
+          console.error("Pathfinding failed between", startPoint, "and", endPoint);
+          return [];
         }
     }
     

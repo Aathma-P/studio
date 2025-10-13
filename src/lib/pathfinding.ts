@@ -62,8 +62,9 @@ export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapP
             if (nodePos.x > maxX || nodePos.x < 0 || nodePos.y > maxY || nodePos.y < 0) {
                 continue;
             }
-
-            if (grid[nodePos.y][nodePos.x] !== 0 && grid[nodePos.y][nodePos.x] !== 2 && grid[nodePos.y][nodePos.x] !== 3) {
+            
+            // Allow pathing through entrance (2) and checkout (3)
+            if (grid[nodePos.y][nodePos.x] === 1) { // 1 is a shelf/wall
                  continue;
             }
             
