@@ -50,7 +50,7 @@ export const STORE_LAYOUT = [
   [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1], // y=8
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], // y=9 (Bottom corridor)
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // y=10 (Walkway for entrance/checkout)
-  [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3], // y=11 (Bottom wall with entrance/checkout)
+  [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3], // y=11 (Bottom wall with entrance/checkout & FIX)
 ];
 
 export const AISLE_CENTERS = [
