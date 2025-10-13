@@ -19,9 +19,10 @@ function heuristic(a: MapPoint, b: MapPoint) {
     return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
-export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapPoint[] | null {
-    const startNode = new Node(null, {x: Math.floor(start.x), y: Math.floor(start.y)});
-    const endNode = new Node(null, {x: Math.floor(end.x), y: Math.floor(end.y)});
+export function findPath(start: MapPoint, end: MapPoint): MapPoint[] | null {
+    const grid = STORE_LAYOUT;
+    const startNode = new Node(null, {x: Math.round(start.x), y: Math.round(start.y)});
+    const endNode = new Node(null, {x: Math.round(end.x), y: Math.round(end.y)});
 
     const openList: Node[] = [];
     const closedList: Node[] = [];
@@ -63,8 +64,7 @@ export function findPath(start: MapPoint, end: MapPoint, grid: number[][]): MapP
                 continue;
             }
             
-            // Allow pathing through entrance (2) and checkout (3)
-            if (grid[nodePos.y][nodePos.x] === 1) { // 1 is a shelf/wall
+            if (grid[nodePos.y][nodePos.x] === 1) { 
                  continue;
             }
             
@@ -125,7 +125,7 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
     
     let fullPath: MapPoint[] = [];
     for (let i = 0; i < waypoints.length - 1; i++) {
-        const segment = findPath(waypoints[i].point, waypoints[i+1].point, STORE_LAYOUT);
+        const segment = findPath(waypoints[i].point, waypoints[i+1].point);
         if (segment) {
             const segmentToAdd = i === 0 ? segment : segment.slice(1);
             fullPath = fullPath.concat(segmentToAdd);
@@ -157,12 +157,10 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         if (!currentDirection) {
             currentDirection = newDirection;
         }
-
-        const waypoint = waypoints.find(wp => wp.point.x === p1.x && wp.point.y === p1.y);
         
         if (newDirection !== currentDirection) {
             if (straightCount > 0) {
-                 instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p1, itemId: instructions[instructions.length - 1].itemId});
+                 instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p1});
             }
             
             let turnText = "";
@@ -177,7 +175,7 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
             else if (currentDirection === 'E' && newDirection === 'N') { turnType = 'left'; turnText = 'Turn left'; }
 
             if (turnText) {
-                instructions.push({ type: turnType, text: turnText, pathPoint: p1, itemId: waypoint?.item?.id });
+                instructions.push({ type: turnType, text: turnText, pathPoint: p1 });
             }
             
             currentDirection = newDirection;
@@ -189,7 +187,7 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         const destinationWaypoint = waypoints.find(wp => wp.point.x === p2.x && wp.point.y === p2.y);
         if (destinationWaypoint?.item) {
              if (straightCount > 1) {
-                instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount-1, pathPoint: p1, itemId: destinationWaypoint.item.id});
+                instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount-1, pathPoint: p1});
              }
             
             const item = destinationWaypoint.item;
@@ -204,29 +202,22 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
     }
 
     if (straightCount > 0) {
-        instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: fullPath[fullPath.length - 1]});
+        const lastPoint = fullPath[fullPath.length - 1];
+        if (lastPoint.x !== CHECKOUT_POS.x || lastPoint.y !== CHECKOUT_POS.y) {
+           instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: fullPath[fullPath.length - 1]});
+        }
     }
     
-    // Check if the last point is the checkout
-    const lastPoint = fullPath[fullPath.length - 1];
-    if(lastPoint.x !== CHECKOUT_POS.x || lastPoint.y !== CHECKOUT_POS.y) {
-         const finalSegment = findPath(lastPoint, CHECKOUT_POS, STORE_LAYOUT);
-         if(finalSegment && finalSegment.length > 1) {
-             // We'll just add a simplified instruction to go to checkout
-         }
-    }
-
     instructions.push({type: 'finish', text: 'Proceed to checkout.', pathPoint: CHECKOUT_POS});
 
-    // A final filter to remove consecutive straight instructions which can sometimes happen
     const finalInstructions = instructions.filter((inst, index, arr) => {
         if(index > 0 && inst.type === 'straight' && arr[index-1].type === 'straight') {
-            arr[index-1].distance! += inst.distance!;
+            const prevDistance = arr[index-1].distance || 0;
+            arr[index-1].distance = prevDistance + (inst.distance || 0);
             return false;
         }
         return true;
-    })
-
+    });
 
     return finalInstructions;
 }

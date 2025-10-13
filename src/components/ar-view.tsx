@@ -12,6 +12,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getTurnByTurnInstructions, Instruction } from "@/lib/pathfinding";
 import { useIsMobile, useOrientation } from "@/hooks/use-mobile";
 import StoreMap from "./store-map";
+import { findPath } from "@/lib/pathfinding";
+import { ENTRANCE_POS } from "@/lib/data";
+
 
 interface ArViewProps {
   items: ShoppingListItem[];
@@ -36,6 +39,7 @@ export default function ArView({ items }: ArViewProps) {
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
+  const [currentItem, setCurrentItem] = React.useState<ShoppingListItem | null>(null);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -43,6 +47,52 @@ export default function ArView({ items }: ArViewProps) {
   const { toast } = useToast();
   const orientation = useOrientation();
   const isMobile = useIsMobile();
+
+  const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+
+  const sortedItems = React.useMemo(() => {
+    if (items.length === 0) return [];
+
+    const itemsWithNavPoints = items.map(item => ({
+      ...item,
+      navPoint: {
+        x: getAisleNavX(item.location.aisle),
+        y: item.location.section,
+      }
+    }));
+
+    const findShortestGreedyPath = (itemsToVisit: typeof itemsWithNavPoints): typeof itemsWithNavPoints => {
+        let unvisited = [...itemsToVisit];
+        let orderedPath: typeof itemsWithNavPoints = [];
+        let currentPoint = ENTRANCE_POS;
+
+        while (unvisited.length > 0) {
+            let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
+            let shortestDistance = Infinity;
+
+            for (const item of unvisited) {
+                const path = findPath(currentPoint, item.navPoint);
+                const distance = path ? path.length : Infinity;
+                if (distance < shortestDistance) {
+                    shortestDistance = distance;
+                    nearestItem = item;
+                }
+            }
+
+            if (nearestItem) {
+                orderedPath.push(nearestItem);
+                currentPoint = nearestItem.navPoint;
+                unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
+            } else {
+                break;
+            }
+        }
+        return orderedPath;
+    };
+
+    return findShortestGreedyPath(itemsWithNavPoints);
+  }, [items]);
+
 
   React.useEffect(() => {
     const getCameraPermission = async () => {
@@ -72,29 +122,23 @@ export default function ArView({ items }: ArViewProps) {
     }
   }, []);
 
-  const sortedItems = React.useMemo(() => {
-    return [...items].sort((a, b) => {
-      if (a.location.aisle !== b.location.aisle) {
-        return a.location.aisle - b.location.aisle;
-      }
-      return a.location.section - b.location.section;
-    });
-  }, [items]);
   
   React.useEffect(() => {
     if (sortedItems.length > 0) {
       const instructions = getTurnByTurnInstructions(sortedItems);
       setArInstructions(instructions);
       setInstructionIndex(0);
+      setCurrentItem(sortedItems[0]);
     } else {
       setArInstructions([]);
       setInstructionIndex(0);
+      setCurrentItem(null);
     }
   }, [sortedItems]);
 
 
   const currentInstruction = arInstructions[instructionIndex];
-  const currentItem = sortedItems.find(it => it.id === currentInstruction?.itemId) ?? sortedItems[0];
+  
   const itemToScan = React.useMemo(() => {
     if (currentInstruction?.type !== 'scan') return null;
     return sortedItems.find(it => it.id === currentInstruction.itemId);
@@ -104,11 +148,24 @@ export default function ArView({ items }: ArViewProps) {
   const goToNextInstruction = React.useCallback(() => {
     setInstructionIndex(prev => {
         if (prev < arInstructions.length - 1) {
-            return prev + 1;
+            const nextIndex = prev + 1;
+            const nextInstruction = arInstructions[nextIndex];
+            
+            // Update current item when we pass a scan instruction
+            if (arInstructions[prev].type === 'scan') {
+                const currentItemIndex = sortedItems.findIndex(it => it.id === arInstructions[prev].itemId);
+                if (currentItemIndex !== -1 && currentItemIndex < sortedItems.length - 1) {
+                    setCurrentItem(sortedItems[currentItemIndex + 1]);
+                } else {
+                    setCurrentItem(null); // All items are done, navigating to checkout
+                }
+            }
+
+            return nextIndex;
         }
-        return prev; // Stay on the last instruction if we're at the end
+        return prev;
     });
-  }, [arInstructions.length]);
+  }, [arInstructions, sortedItems]);
 
   // Effect for handling automatic advancement of instructions (e.g., "straight")
   React.useEffect(() => {
@@ -173,11 +230,10 @@ export default function ArView({ items }: ArViewProps) {
 
         setScanResult(result);
         
-        // After showing result, automatically move to the next instruction
         setTimeout(() => {
             setIsScanning(false);
             setScanResult(null);
-            goToNextInstruction(); // This moves past the 'scan' instruction
+            goToNextInstruction();
         }, 3000);
 
     } catch (error) {
@@ -191,17 +247,15 @@ export default function ArView({ items }: ArViewProps) {
         setTimeout(() => {
             setIsScanning(false);
             setScanResult(null);
-            goToNextInstruction(); // Still advance after failure
+            goToNextInstruction();
         }, 3000);
     }
   };
   
   const handleUserTap = () => {
-    // Prevent advancing while scanning or showing scan results
     if (isScanning || scanResult) return;
     
     if (currentInstruction) {
-        // Only advance on tap for instructions that require user action
         if (['start', 'left', 'right', 'turn-left', 'turn-right', 'finish'].includes(currentInstruction.type)) {
             goToNextInstruction();
         } else if (currentInstruction.type === 'scan') {
@@ -258,7 +312,7 @@ export default function ArView({ items }: ArViewProps) {
 
   if (isMobile && orientation === 'landscape') {
     const currentPosition = currentInstruction?.pathPoint;
-    const currentItemIndex = sortedItems.findIndex(it => it.id === currentInstruction.itemId);
+    const currentItemIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
     const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
     
     return (
@@ -269,7 +323,6 @@ export default function ArView({ items }: ArViewProps) {
   }
 
   const Icon = instructionIcons[currentInstruction.type as keyof typeof instructionIcons] || ArrowUp;
-  const nextItemToFind = currentItem;
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden" onClick={handleUserTap}>
@@ -288,11 +341,11 @@ export default function ArView({ items }: ArViewProps) {
         <div className="flex items-center justify-between">
             <div>
                 <p className="text-sm text-neutral-300">Next item:</p>
-                <p className="text-xl font-bold">{nextItemToFind?.name || "All items found!"}</p>
+                <p className="text-xl font-bold">{currentItem?.name || "Checkout"}</p>
             </div>
-             {nextItemToFind && <div className="text-right">
+             {currentItem && <div className="text-right">
                 <p className="text-sm text-neutral-300">Aisle:</p>
-                <p className="text-xl font-bold">{nextItemToFind.location.aisle}</p>
+                <p className="text-xl font-bold">{currentItem.location.aisle}</p>
             </div>}
         </div>
       </div>

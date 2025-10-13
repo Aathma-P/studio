@@ -15,7 +15,6 @@ interface StoreMapProps {
 const INITIAL_CELL_SIZE = 40;
 
 const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
-
 const getAisleShelfX = (aisle: number) => (aisle - 1) * 2 + 1;
 
 
@@ -71,7 +70,7 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
         let shortestDistance = Infinity;
 
         for (const item of unvisited) {
-            const path = findPath(currentPoint, item.navPoint, STORE_LAYOUT);
+            const path = findPath(currentPoint, item.navPoint);
             const distance = path ? path.length : Infinity;
             if (distance < shortestDistance) {
                 shortestDistance = distance;
@@ -112,7 +111,7 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
         const startPoint = waypoints[i];
         const endPoint = waypoints[i+1];
         
-        const segment = findPath(startPoint, endPoint, STORE_LAYOUT);
+        const segment = findPath(startPoint, endPoint);
 
         if (segment) {
             // The first segment includes the start point, subsequent ones shouldn't to avoid duplicates
