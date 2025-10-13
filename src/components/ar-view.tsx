@@ -151,19 +151,25 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     setInstructionIndex(prev => {
         if (prev < arInstructions.length - 1) {
             const nextIndex = prev + 1;
+            const nextInstruction = arInstructions[nextIndex];
             const prevInstruction = arInstructions[prev];
 
+            // If we just finished a scan, figure out the *next* item to navigate to.
             if (prevInstruction.type === 'scan') {
                 const currentItemIndex = sortedItems.findIndex(it => it.id === prevInstruction.itemId);
                 const isLastItem = currentItemIndex === sortedItems.length - 1;
                 
                 if (!isLastItem && currentItemIndex !== -1) {
+                    // Set target to the next item in the sorted list
                     setCurrentItem(sortedItems[currentItemIndex + 1]);
                 } else {
-                    // This happens after the last item is scanned.
-                    // The next target is the checkout.
+                    // This happens after the last item is scanned. The next target is the checkout.
                     setCurrentItem(null); 
                 }
+            } else if (nextInstruction.type === 'scan') {
+                // If the next instruction is a scan, update the current item to that item.
+                const item = sortedItems.find(it => it.id === nextInstruction.itemId);
+                if (item) setCurrentItem(item);
             }
 
             return nextIndex;
@@ -231,16 +237,16 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             itemName: itemToScan.name,
         });
 
-        if (result.isFound) {
-            onItemScannedAndFound(itemToScan.id);
-        }
-
         setScanResult(result);
         
         setTimeout(() => {
+            if (result.isFound) {
+                // IMPORTANT: Update parent state *after* navigation has had a chance to advance.
+                onItemScannedAndFound(itemToScan.id);
+            }
+            goToNextInstruction();
             setIsScanning(false);
             setScanResult(null);
-            goToNextInstruction();
         }, 3000);
 
     } catch (error) {
@@ -252,9 +258,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         });
         setScanResult({isFound: false, guidance: "The AI scan failed. Please try again."})
         setTimeout(() => {
+            goToNextInstruction();
             setIsScanning(false);
             setScanResult(null);
-            goToNextInstruction();
         }, 3000);
     }
   };
@@ -417,5 +423,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
 
     
