@@ -105,18 +105,14 @@ const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
 
 export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instruction[] {
     const instructions: Instruction[] = [];
-    if (items.length === 0) return [];
-
-     const sortedItems = [...items].sort((a, b) => {
-        if (a.location.aisle !== b.location.aisle) {
-            return a.location.aisle - b.location.aisle;
-        }
-        return a.location.section - b.location.section;
-    });
+    if (items.length === 0) {
+        instructions.push({ type: 'finish', text: 'Add items to your list to begin.', pathPoint: ENTRANCE_POS });
+        return instructions;
+    };
 
     const waypoints: {point: MapPoint, item?: ShoppingListItem}[] = [
         { point: ENTRANCE_POS },
-        ...sortedItems.map(item => ({
+        ...items.map(item => ({
             point: {
                 x: getAisleNavX(item.location.aisle),
                 y: item.location.section,
@@ -135,7 +131,10 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         }
     }
 
-    if(fullPath.length < 2) return [];
+    if(fullPath.length < 2) {
+        instructions.push({ type: 'finish', text: 'Cannot calculate path.', pathPoint: ENTRANCE_POS });
+        return instructions;
+    }
 
     instructions.push({ type: 'start', text: 'Start at the entrance', pathPoint: fullPath[0] });
 
@@ -158,11 +157,11 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
             currentDirection = newDirection;
         }
 
-        const waypoint = waypoints.find(wp => wp.point.x === p2.x && wp.point.y === p2.y);
-
+        const waypoint = waypoints.find(wp => wp.point.x === p1.x && wp.point.y === p1.y);
+        
         if (newDirection !== currentDirection) {
             if (straightCount > 0) {
-                 instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p1});
+                 instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p1, itemId: waypoint?.item?.id});
             }
             
             let turnText = "";
@@ -177,28 +176,28 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
             else if (currentDirection === 'E' && newDirection === 'N') { turnType = 'left'; turnText = 'Turn left'; }
 
             if (turnText) {
-                instructions.push({ type: turnType, text: turnText, pathPoint: p1 });
+                instructions.push({ type: turnType, text: turnText, pathPoint: p1, itemId: waypoint?.item?.id });
             }
             
             currentDirection = newDirection;
-            straightCount = 0;
+            straightCount = 1;
+        } else {
+             straightCount++;
         }
 
-        if (waypoint && waypoint.item) {
-            if (straightCount > 0) {
-                instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: p2});
-            }
+        if (waypoint?.item && waypoint.point.x === p2.x && waypoint.point.y === p2.y) {
+             if (straightCount > 1) {
+                instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount-1, pathPoint: p1, itemId: waypoint.item.id});
+             }
             
             const item = waypoint.item;
             const itemShelfX = (item.location.aisle - 1) * 2 + 1;
             const turnDirection = itemShelfX < waypoint.point.x ? 'left' : 'right';
             const turnInstructionType = turnDirection === 'left' ? 'turn-left' : 'turn-right';
             
-            instructions.push({ type: turnInstructionType, text: `Item is on your ${turnDirection}`, pathPoint: p2 });
+            instructions.push({ type: turnInstructionType, text: `Item is on your ${turnDirection}`, pathPoint: p2, itemId: item.id });
             instructions.push({ type: 'scan', text: `Scan for ${item.name}`, itemId: item.id, pathPoint: p2 });
             straightCount = 0;
-        } else {
-             straightCount++;
         }
     }
 
@@ -206,7 +205,7 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
         instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: fullPath[fullPath.length - 1]});
     }
 
-    instructions.push({type: 'finish', text: 'You found all items! Proceed to checkout.', pathPoint: CHECKOUT_POS});
+    instructions.push({type: 'finish', text: 'Proceed to checkout.', pathPoint: CHECKOUT_POS});
 
     return instructions;
 }

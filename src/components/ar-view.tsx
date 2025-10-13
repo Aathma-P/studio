@@ -30,13 +30,12 @@ const instructionIcons = {
 
 
 export default function ArView({ items }: ArViewProps) {
-  const [currentItemId, setCurrentItemId] = React.useState<string | null>(null);
+  const [arInstructions, setArInstructions] = React.useState<Instruction[]>([]);
   const [instructionIndex, setInstructionIndex] = React.useState(0);
   const [progress, setProgress] = React.useState(100);
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
-  const [arInstructions, setArInstructions] = React.useState<Instruction[]>([]);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -48,11 +47,6 @@ export default function ArView({ items }: ArViewProps) {
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setHasCameraPermission(false);
-        toast({
-          variant: "destructive",
-          title: "Camera Not Supported",
-          description: "Your browser does not support camera access.",
-        });
         return;
       }
       try {
@@ -75,8 +69,7 @@ export default function ArView({ items }: ArViewProps) {
             stream.getTracks().forEach(track => track.stop());
         }
     }
-  }, [toast]);
-
+  }, []);
 
   const sortedItems = React.useMemo(() => {
     return [...items].sort((a, b) => {
@@ -86,47 +79,49 @@ export default function ArView({ items }: ArViewProps) {
       return a.location.section - b.location.section;
     });
   }, [items]);
-
-  const currentItem = sortedItems.find(it => it.id === currentItemId) ?? sortedItems[0];
   
   React.useEffect(() => {
     if (sortedItems.length > 0) {
       const instructions = getTurnByTurnInstructions(sortedItems);
       setArInstructions(instructions);
-      setCurrentItemId(sortedItems[0].id);
       setInstructionIndex(0);
     } else {
       setArInstructions([]);
-      setCurrentItemId(null);
       setInstructionIndex(0);
     }
   }, [sortedItems]);
 
 
   const currentInstruction = arInstructions[instructionIndex];
+  const currentItem = sortedItems.find(it => it.id === currentInstruction?.itemId) ?? sortedItems[0];
+
 
   const goToNextInstruction = React.useCallback(() => {
-    if (instructionIndex < arInstructions.length - 1) {
-      setInstructionIndex(prev => prev + 1);
-    }
-  }, [instructionIndex, arInstructions.length]);
+    setInstructionIndex(prev => {
+        if (prev < arInstructions.length - 1) {
+            return prev + 1;
+        }
+        return prev; // Stay on the last instruction if we're at the end
+    });
+  }, [arInstructions.length]);
 
+  // Effect for handling automatic advancement of instructions (e.g., "straight")
   React.useEffect(() => {
-    if (!currentInstruction || isScanning) return;
+    if (!currentInstruction || isScanning || scanResult) return;
   
-    // Automatically advance on "straight" instructions
     if (currentInstruction.type === 'straight') {
-      const duration = (currentInstruction.distance || 1) * 300; // Shorter time per segment
+      const duration = (currentInstruction.distance || 1) * 300; 
       const timer = setTimeout(() => {
         goToNextInstruction();
       }, duration);
       return () => clearTimeout(timer);
     }
-  }, [currentInstruction, isScanning, goToNextInstruction]);
+  }, [currentInstruction, isScanning, scanResult, goToNextInstruction]);
   
+  // Effect for managing the progress bar for "straight" instructions
   React.useEffect(() => {
     setProgress(100);
-    if (!currentInstruction || currentInstruction.type !== 'straight') return;
+    if (!currentInstruction || currentInstruction.type !== 'straight' || isScanning) return;
 
     const intervalTime = (currentInstruction.distance || 1) * 300;
     
@@ -145,7 +140,7 @@ export default function ArView({ items }: ArViewProps) {
     animationFrameId = requestAnimationFrame(step);
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [instructionIndex, currentInstruction]);
+  }, [instructionIndex, currentInstruction, isScanning]);
 
   const handleScan = async () => {
     if (!currentItem || !videoRef.current || !canvasRef.current || !hasCameraPermission) return;
@@ -173,24 +168,12 @@ export default function ArView({ items }: ArViewProps) {
 
         setScanResult(result);
         
+        // After showing result, automatically move to the next instruction
         setTimeout(() => {
-            setScanResult(null);
             setIsScanning(false);
-            
-            // This advances to the instruction AFTER the scan (e.g., next turn or straight)
-            goToNextInstruction();
-
-            // Logic to move to the next item
-            const currentSortedIndex = sortedItems.findIndex(it => it.id === currentItem.id);
-            if(currentSortedIndex > -1 && currentSortedIndex < sortedItems.length - 1) {
-                const nextItem = sortedItems[currentSortedIndex + 1];
-                setCurrentItemId(nextItem.id);
-            } else {
-                // Last item was found, move towards checkout
-                setCurrentItemId('checkout'); 
-            }
-
-        }, 4000);
+            setScanResult(null);
+            goToNextInstruction(); // This moves past the 'scan' instruction
+        }, 3000);
 
     } catch (error) {
         console.error("AI scan failed:", error);
@@ -201,20 +184,24 @@ export default function ArView({ items }: ArViewProps) {
         });
         setScanResult({isFound: false, guidance: "The AI scan failed. Please try again."})
         setTimeout(() => {
-            setScanResult(null);
             setIsScanning(false);
-            goToNextInstruction();
-        }, 4000);
+            setScanResult(null);
+            goToNextInstruction(); // Still advance after failure
+        }, 3000);
     }
   };
   
   const handleUserTap = () => {
-    if (isScanning || !currentInstruction) return;
-
-     if (currentInstruction.type === 'scan') {
-      handleScan();
-    } else if (currentInstruction.type === 'turn-left' || currentInstruction.type === 'turn-right' || currentInstruction.type === 'left' || currentInstruction.type === 'right' || currentInstruction.type === 'start') {
-        goToNextInstruction();
+    // Prevent advancing while scanning or showing scan results
+    if (isScanning || scanResult) return;
+    
+    if (currentInstruction) {
+        // Only advance on tap for instructions that require user action
+        if (['start', 'left', 'right', 'turn-left', 'turn-right', 'finish'].includes(currentInstruction.type)) {
+            goToNextInstruction();
+        } else if (currentInstruction.type === 'scan') {
+            handleScan();
+        }
     }
   }
 
@@ -254,7 +241,7 @@ export default function ArView({ items }: ArViewProps) {
   
   if (!currentInstruction || currentInstruction.type === 'finish') {
      return (
-      <div className="w-full h-full flex items-center justify-center bg-black">
+      <div className="w-full h-full flex items-center justify-center bg-black" onClick={handleUserTap}>
         <div className="text-center text-white">
           <ShoppingBasket className="mx-auto h-12 w-12 text-green-500" />
           <h3 className="mt-4 text-lg font-medium">Shopping Complete!</h3>
@@ -265,10 +252,18 @@ export default function ArView({ items }: ArViewProps) {
   }
 
   if (orientation === 'landscape') {
-    const currentPosition = currentInstruction.pathPoint;
+    const currentPosition = currentInstruction?.pathPoint;
+    const itemsToMap = currentInstruction.itemId 
+        ? sortedItems.filter(item => {
+            const currentItemIndex = sortedItems.findIndex(it => it.id === currentInstruction.itemId);
+            const thisItemIndex = sortedItems.findIndex(it => it.id === item.id);
+            return thisItemIndex >= currentItemIndex;
+        })
+        : sortedItems;
+
     return (
       <div className="w-full h-full bg-background">
-        <StoreMap items={sortedItems} simulatedUserPosition={currentPosition} />
+        <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
       </div>
     )
   }
@@ -283,13 +278,14 @@ export default function ArView({ items }: ArViewProps) {
       
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
 
+      {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-6 text-white z-10">
-         {(currentInstruction.type === 'straight') && (
-            <div className="w-full bg-white/20 backdrop-blur-sm rounded-full h-1.5">
+         {currentInstruction.type === 'straight' && (
+            <div className="w-full bg-white/20 backdrop-blur-sm rounded-full h-1.5 mb-4">
                 <Progress value={progress} className="h-1.5 transition-transform duration-200 ease-linear" />
             </div>
          )}
-        <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center justify-between">
             <div>
                 <p className="text-sm text-neutral-300">Next item:</p>
                 <p className="text-xl font-bold">{nextItemToFind?.name || "All items found!"}</p>
@@ -301,6 +297,7 @@ export default function ArView({ items }: ArViewProps) {
         </div>
       </div>
       
+       {/* Scanning UI */}
        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-full px-8">
         {isScanning && !scanResult && (
           <div className="flex flex-col items-center justify-center text-white bg-black/50 backdrop-blur-md p-6 rounded-xl">
@@ -318,7 +315,7 @@ export default function ArView({ items }: ArViewProps) {
         )}
       </div>
 
-
+      {/* Main Instruction UI */}
       <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center text-white z-10">
         {currentInstruction.type === 'scan' ? (
              <div className="flex flex-col items-center animate-fade-in">
@@ -338,7 +335,7 @@ export default function ArView({ items }: ArViewProps) {
                 <h2 className="text-3xl font-bold drop-shadow-lg">
                     {currentInstruction.text}
                 </h2>
-                 {currentInstruction.type !== 'straight' && <p className="mt-2 text-base text-neutral-300 drop-shadow-md">Tap to continue</p>}
+                 {['start', 'left', 'right', 'turn-left', 'turn-right'].includes(currentInstruction.type) && <p className="mt-2 text-base text-neutral-300 drop-shadow-md">Tap to continue</p>}
             </div>
         )}
       </div>
