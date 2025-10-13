@@ -151,12 +151,17 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     setInstructionIndex(prev => {
         if (prev < arInstructions.length - 1) {
             const nextIndex = prev + 1;
-            
-            if (arInstructions[prev].type === 'scan') {
-                const currentItemIndex = sortedItems.findIndex(it => it.id === arInstructions[prev].itemId);
-                if (currentItemIndex !== -1 && currentItemIndex < sortedItems.length - 1) {
+            const prevInstruction = arInstructions[prev];
+
+            if (prevInstruction.type === 'scan') {
+                const currentItemIndex = sortedItems.findIndex(it => it.id === prevInstruction.itemId);
+                const isLastItem = currentItemIndex === sortedItems.length - 1;
+                
+                if (!isLastItem && currentItemIndex !== -1) {
                     setCurrentItem(sortedItems[currentItemIndex + 1]);
                 } else {
+                    // This happens after the last item is scanned.
+                    // The next target is the checkout.
                     setCurrentItem(null); 
                 }
             }
@@ -412,3 +417,5 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
