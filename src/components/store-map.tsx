@@ -15,6 +15,7 @@ interface StoreMapProps {
 const INITIAL_CELL_SIZE = 40;
 
 const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+
 const getAisleShelfX = (aisle: number) => (aisle - 1) * 2 + 1;
 
 
@@ -59,62 +60,38 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
         y: item.location.section,
       }
     }));
-  
-    const calculateTotalDistance = (path: typeof itemsWithNavPoints): number => {
-      let totalDist = 0;
-      let lastPoint = ENTRANCE_POS;
-      
-      const waypoints = [lastPoint, ...path.map(p => p.navPoint), CHECKOUT_POS];
-      
-      for(let i=0; i<waypoints.length-1; i++) {
-        const segment = findPath(waypoints[i], waypoints[i+1], STORE_LAYOUT);
-        totalDist += segment?.length || Infinity;
-      }
-      return totalDist;
-    };
-  
-    const findShortestPath = (itemsToVisit: typeof itemsWithNavPoints): typeof itemsWithNavPoints => {
-      let shortestPath: typeof itemsWithNavPoints = [];
-      let minDistance = Infinity;
-  
-      const permute = (arr: typeof itemsWithNavPoints, l: number, r: number) => {
-        if (l === r) {
-          const currentDistance = calculateTotalDistance(arr);
-          if (currentDistance < minDistance) {
-            minDistance = currentDistance;
-            shortestPath = [...arr];
-          }
+
+    const findShortestGreedyPath = (itemsToVisit: typeof itemsWithNavPoints): typeof itemsWithNavPoints => {
+      let unvisited = [...itemsToVisit];
+      let orderedPath: typeof itemsWithNavPoints = [];
+      let currentPoint = ENTRANCE_POS;
+
+      while (unvisited.length > 0) {
+        let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
+        let shortestDistance = Infinity;
+
+        for (const item of unvisited) {
+            const path = findPath(currentPoint, item.navPoint, STORE_LAYOUT);
+            const distance = path ? path.length : Infinity;
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                nearestItem = item;
+            }
+        }
+
+        if (nearestItem) {
+          orderedPath.push(nearestItem);
+          currentPoint = nearestItem.navPoint;
+          unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
         } else {
-          for (let i = l; i <= r; i++) {
-            [arr[l], arr[i]] = [arr[i], arr[l]];
-            permute(arr, l + 1, r);
-            [arr[l], arr[i]] = [arr[i], arr[l]]; // backtrack
-          }
-        }
-      };
-      // For performance, only use permutation for small lists.
-      // For larger lists, a greedy approach is better than nothing.
-      if (itemsToVisit.length <= 7) { 
-        permute(itemsToVisit, 0, itemsToVisit.length - 1);
-      } else { // Greedy approach for larger lists
-        let unvisited = [...itemsToVisit];
-        let currentPoint = ENTRANCE_POS;
-        while(unvisited.length > 0) {
-          unvisited.sort((a,b) => {
-            const distA = findPath(currentPoint, a.navPoint, STORE_LAYOUT)?.length || Infinity;
-            const distB = findPath(currentPoint, b.navPoint, STORE_LAYOUT)?.length || Infinity;
-            return distA - distB;
-          });
-          const nextItem = unvisited.shift()!;
-          shortestPath.push(nextItem);
-          currentPoint = nextItem.navPoint;
+          // If no path can be found to any remaining item, break to avoid infinite loop
+          break;
         }
       }
-      
-      return shortestPath;
+      return orderedPath;
     };
   
-    return findShortestPath(itemsWithNavPoints);
+    return findShortestGreedyPath(itemsWithNavPoints);
   }, [items]);
 
   const pathPoints = React.useMemo(() => {

@@ -206,8 +206,27 @@ export function getTurnByTurnInstructions(items: ShoppingListItem[]): Instructio
     if (straightCount > 0) {
         instructions.push({type: 'straight', text: `Proceed straight`, distance: straightCount, pathPoint: fullPath[fullPath.length - 1]});
     }
+    
+    // Check if the last point is the checkout
+    const lastPoint = fullPath[fullPath.length - 1];
+    if(lastPoint.x !== CHECKOUT_POS.x || lastPoint.y !== CHECKOUT_POS.y) {
+         const finalSegment = findPath(lastPoint, CHECKOUT_POS, STORE_LAYOUT);
+         if(finalSegment && finalSegment.length > 1) {
+             // We'll just add a simplified instruction to go to checkout
+         }
+    }
 
     instructions.push({type: 'finish', text: 'Proceed to checkout.', pathPoint: CHECKOUT_POS});
 
-    return instructions;
+    // A final filter to remove consecutive straight instructions which can sometimes happen
+    const finalInstructions = instructions.filter((inst, index, arr) => {
+        if(index > 0 && inst.type === 'straight' && arr[index-1].type === 'straight') {
+            arr[index-1].distance! += inst.distance!;
+            return false;
+        }
+        return true;
+    })
+
+
+    return finalInstructions;
 }
