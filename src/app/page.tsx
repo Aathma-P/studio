@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Map, Camera, List } from "lucide-react";
+import { Map, Camera, List, Scan } from "lucide-react";
 
 import type { ShoppingListItem, Product } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
@@ -11,21 +11,42 @@ import { Button } from "@/components/ui/button";
 import ShoppingList from "@/components/shopping-list";
 import StoreMap from "@/components/store-map";
 import ArView from "@/components/ar-view";
+import BarcodeScanner from "@/components/barcode-scanner";
 import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
-type MobileView = "list" | "map" | "ar";
+type View = "map" | "ar" | "scan";
+type MobileView = "list" | "map" | "ar" | "scan";
 
 export default function Home() {
   const [shoppingList, setShoppingList] = React.useState<ShoppingListItem[]>([]);
-  const [view, setView] = React.useState<"map" | "ar">("map");
+  const [view, setView] = React.useState<View>("map");
   const [mobileView, setMobileView] = React.useState<MobileView>("list");
+  const { toast } = useToast();
 
   const handleAddItem = (product: Product) => {
     if (!shoppingList.find((item) => item.id === product.id)) {
       setShoppingList([...shoppingList, { ...product, completed: false }]);
+      toast({
+        title: "Item Added",
+        description: `${product.name} has been added to your list.`,
+      });
     }
   };
+
+  const handleAddItemById = (productId: string) => {
+    const product = ALL_PRODUCTS.find(p => p.id === productId);
+    if (product) {
+      handleAddItem(product);
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Scan Error",
+        description: `Product with code "${productId}" not found.`,
+      });
+    }
+  }
 
   const handleRemoveItem = (productId: string) => {
     setShoppingList(shoppingList.filter((item) => item.id !== productId));
@@ -76,6 +97,15 @@ export default function Home() {
             <Camera className="h-4 w-4" />
             AR View
           </Button>
+          <Button
+            variant={view === "scan" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("scan")}
+            className="gap-2"
+          >
+            <Scan className="h-4 w-4" />
+            Barcode Scan
+          </Button>
         </div>
         <div className="md:hidden">
           {/* Placeholder for potential mobile header actions */}
@@ -100,14 +130,14 @@ export default function Home() {
         <main className="flex flex-1 flex-col overflow-auto">
           {/* Desktop View */}
           <div className="hidden h-full md:block">
-            {view === "map" ? (
-              <StoreMap items={pendingItems} />
-            ) : (
+            {view === "map" && <StoreMap items={pendingItems} />}
+            {view === "ar" && (
               <ArView
                 items={pendingItems}
                 onItemScannedAndFound={handleToggleItem}
               />
             )}
+            {view === "scan" && <BarcodeScanner onScanSuccess={handleAddItemById} />}
           </div>
 
           {/* Mobile View */}
@@ -131,6 +161,7 @@ export default function Home() {
                   onItemScannedAndFound={handleToggleItem}
                 />
               )}
+              {mobileView === "scan" && <BarcodeScanner onScanSuccess={handleAddItemById} />}
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 flex h-16 shrink-0 items-center justify-around border-t bg-card">
@@ -169,6 +200,18 @@ export default function Home() {
               >
                 <Camera className="h-5 w-5" />
                 <span className="text-xs">AR</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                className={cn(
+                  "flex-col h-auto py-2",
+                  mobileView === "scan" && "text-primary"
+                )}
+                onClick={() => setMobileView("scan")}
+              >
+                <Scan className="h-5 w-5" />
+                <span className="text-xs">Scan</span>
               </Button>
             </div>
           </div>
