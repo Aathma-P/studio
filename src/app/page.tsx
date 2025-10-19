@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import HomePage from "./home/page";
-import splashImg from "@/assets/images/Splash.png";
 
 export default function SplashPage() {
   const [loading, setLoading] = useState(true);
@@ -26,8 +25,9 @@ export default function SplashPage() {
       >
         <div className="relative w-80 h-80">
           <Image
-            src={splashImg}
+            src="https://picsum.photos/seed/grocery-cart/300/300"
             alt="Splash"
+            data-ai-hint="grocery cart"
             fill
             priority
             className="object-contain animate-fade-in"
