@@ -32,6 +32,18 @@ const formatPrice = (price: number) => {
     }).format(price);
 }
 
+const getCategoryColor = (category: Product['category']) => {
+    switch (category) {
+        case 'Produce': return 'bg-yellow-100 text-yellow-800';
+        case 'Dairy': return 'bg-blue-100 text-blue-800';
+        case 'Meat': return 'bg-red-100 text-red-800';
+        case 'Bakery': return 'bg-pink-100 text-pink-800';
+        case 'Pantry': return 'bg-orange-100 text-orange-800';
+        case 'Frozen': return 'bg-purple-100 text-purple-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
 const ProductCard = ({ 
     product, 
     quantity,
@@ -45,11 +57,12 @@ const ProductCard = ({
     onIncreaseQuantity: (productId: string) => void,
     onDecreaseQuantity: (productId: string) => void,
 }) => {
+    const categoryColors = getCategoryColor(product.category);
     return (
         <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
             <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[#E8F5E9]">
-                    <product.icon className="h-6 w-6 text-primary" />
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-md", categoryColors)}>
+                    <product.icon className="h-6 w-6" />
                 </div>
                 <div>
                     <p className="font-bold text-sm text-black">{product.name}</p>
