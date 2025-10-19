@@ -101,6 +101,9 @@ export default function Home() {
     return completedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   }, [completedItems]);
 
+  const navButtonClass = "gap-2 transition-all duration-300";
+  const inactiveNavButtonClass = "bg-green-100 text-green-900 hover:bg-green-200";
+
   return (
     <div className="flex h-screen w-full flex-col bg-background">
       <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 text-card-foreground md:px-6">
@@ -108,30 +111,30 @@ export default function Home() {
           <Icons.logo className="h-6 w-6 text-primary-foreground" />
           <span className="text-lg font-bold">GROC_AI</span>
         </div>
-        <div className="hidden items-center gap-2 rounded-lg bg-muted p-1 md:flex">
+        <div className="hidden items-center gap-2 rounded-lg p-1 md:flex">
           <Button
-            variant={view === "map" ? "secondary" : "ghost"}
+            variant={view === "map" ? "secondary" : "default"}
             size="sm"
             onClick={() => setView("map")}
-            className="gap-2"
+            className={cn(navButtonClass, view !== "map" && inactiveNavButtonClass)}
           >
             <Map className="h-4 w-4" />
             2D Map
           </Button>
           <Button
-            variant={view === "ar" ? "secondary" : "ghost"}
+            variant={view === "ar" ? "secondary" : "default"}
             size="sm"
             onClick={() => setView("ar")}
-            className="gap-2"
+            className={cn(navButtonClass, view !== "ar" && inactiveNavButtonClass)}
           >
             <Camera className="h-4 w-4" />
             AR View
           </Button>
           <Button
-            variant={view === "scan" ? "secondary" : "ghost"}
+            variant={view === "scan" ? "secondary" : "default"}
             size="sm"
             onClick={() => setView("scan")}
-            className="gap-2"
+            className={cn(navButtonClass, view !== "scan" && inactiveNavButtonClass)}
           >
             <Scan className="h-4 w-4" />
             Barcode Scan
@@ -203,8 +206,9 @@ export default function Home() {
                 variant="ghost"
                 size="lg"
                 className={cn(
-                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground hover:text-primary",
-                  mobileView === "list" && "text-primary"
+                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground",
+                  mobileView === "list" && "text-green-500",
+                   "hover:text-green-500"
                 )}
                 onClick={() => setMobileView("list")}
               >
@@ -215,8 +219,9 @@ export default function Home() {
                 variant="ghost"
                 size="lg"
                 className={cn(
-                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground hover:text-primary",
-                  mobileView === "map" && "text-primary"
+                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground",
+                  mobileView === "map" && "text-green-500",
+                  "hover:text-green-500"
                 )}
                 onClick={() => setMobileView("map")}
               >
@@ -227,8 +232,9 @@ export default function Home() {
                 variant="ghost"
                 size="lg"
                 className={cn(
-                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground hover:text-primary",
-                  mobileView === "ar" && "text-primary"
+                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground",
+                  mobileView === "ar" && "text-green-500",
+                  "hover:text-green-500"
                 )}
                 onClick={() => setMobileView("ar")}
               >
@@ -239,8 +245,9 @@ export default function Home() {
                 variant="ghost"
                 size="lg"
                 className={cn(
-                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground hover:text-primary",
-                  mobileView === "scan" && "text-primary"
+                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground",
+                  mobileView === "scan" && "text-green-500",
+                  "hover:text-green-500"
                 )}
                 onClick={() => setMobileView("scan")}
               >
