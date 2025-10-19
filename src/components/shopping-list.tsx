@@ -58,7 +58,7 @@ const ProductCard = ({
     colorClass: string,
 }) => {
     return (
-        <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+        <div className="flex items-center justify-between rounded-lg bg-muted p-3">
             <div className="flex items-center gap-3">
                 <div className={cn("flex h-12 w-12 items-center justify-center rounded-md", colorClass)}>
                     <product.icon className="h-6 w-6" />
@@ -352,5 +352,3 @@ export default function ShoppingList({
     </div>
   );
 }
-
-    

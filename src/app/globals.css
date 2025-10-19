@@ -7,8 +7,8 @@
     --background: 0 0% 100%; /* White */
     --foreground: 240 10% 4%; /* Soft Dark Gray #333333 */
 
-    --card: 160 67% 95%; /* Mint Green #C8F7E9 */
-    --card-foreground: 240 10% 4%;
+    --card: 147 65% 30%; /* Darker Green */
+    --card-foreground: 0 0% 100%;
 
     --popover: 160 67% 95%;
     --popover-foreground: 240 10% 4%;
