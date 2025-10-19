@@ -32,17 +32,15 @@ const formatPrice = (price: number) => {
     }).format(price);
 }
 
-const getCategoryColor = (category: Product['category']) => {
-    switch (category) {
-        case 'Produce': return 'bg-yellow-100 text-yellow-800';
-        case 'Dairy': return 'bg-blue-100 text-blue-800';
-        case 'Meat': return 'bg-red-100 text-red-800';
-        case 'Bakery': return 'bg-pink-100 text-pink-800';
-        case 'Pantry': return 'bg-orange-100 text-orange-800';
-        case 'Frozen': return 'bg-purple-100 text-purple-800';
-        default: return 'bg-gray-100 text-gray-800';
-    }
-}
+const pastelColors = [
+    'bg-red-100 text-red-800',
+    'bg-yellow-100 text-yellow-800',
+    'bg-green-100 text-green-800',
+    'bg-blue-100 text-blue-800',
+    'bg-pink-100 text-pink-800',
+    'bg-purple-100 text-purple-800',
+    'bg-orange-100 text-orange-800',
+];
 
 const ProductCard = ({ 
     product, 
@@ -50,18 +48,19 @@ const ProductCard = ({
     onAddItem,
     onIncreaseQuantity,
     onDecreaseQuantity,
+    colorClass,
 }: { 
     product: Product, 
     quantity: number,
     onAddItem: (product: Product) => void,
     onIncreaseQuantity: (productId: string) => void,
     onDecreaseQuantity: (productId: string) => void,
+    colorClass: string,
 }) => {
-    const categoryColors = getCategoryColor(product.category);
     return (
         <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
             <div className="flex items-center gap-3">
-                <div className={cn("flex h-12 w-12 items-center justify-center rounded-md", categoryColors)}>
+                <div className={cn("flex h-12 w-12 items-center justify-center rounded-md", colorClass)}>
                     <product.icon className="h-6 w-6" />
                 </div>
                 <div>
@@ -156,6 +155,8 @@ export default function ShoppingList({
       return quantities;
   }, [items]);
 
+  let productIndex = 0;
+
   return (
     <div className="flex h-full flex-col bg-background text-card-foreground">
       <div className="p-4 border-b">
@@ -200,7 +201,7 @@ export default function ShoppingList({
                 Search Results
               </h3>
               {searchResults.length > 0 ? (
-                searchResults.map((product) => (
+                searchResults.map((product, index) => (
                   <ProductCard 
                     key={product.id}
                     product={product}
@@ -208,6 +209,7 @@ export default function ShoppingList({
                     onAddItem={onAddItem}
                     onIncreaseQuantity={onIncreaseQuantity}
                     onDecreaseQuantity={onDecreaseQuantity}
+                    colorClass={pastelColors[index % pastelColors.length]}
                   />
                 ))
               ) : (
@@ -324,16 +326,21 @@ export default function ShoppingList({
                   <div key={category}>
                     <h4 className="mb-2 text-sm font-semibold">{category}</h4>
                     <div className="space-y-2">
-                      {products.map((product) => (
-                         <ProductCard 
-                            key={product.id}
-                            product={product}
-                            quantity={itemQuantities.get(product.id) || 0}
-                            onAddItem={onAddItem}
-                            onIncreaseQuantity={onIncreaseQuantity}
-                            onDecreaseQuantity={onDecreaseQuantity}
-                         />
-                      ))}
+                      {products.map((product) => {
+                         const colorClass = pastelColors[productIndex % pastelColors.length];
+                         productIndex++;
+                         return (
+                            <ProductCard 
+                                key={product.id}
+                                product={product}
+                                quantity={itemQuantities.get(product.id) || 0}
+                                onAddItem={onAddItem}
+                                onIncreaseQuantity={onIncreaseQuantity}
+                                onDecreaseQuantity={onDecreaseQuantity}
+                                colorClass={colorClass}
+                            />
+                         );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -345,3 +352,5 @@ export default function ShoppingList({
     </div>
   );
 }
+
+    
