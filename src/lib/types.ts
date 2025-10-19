@@ -13,6 +13,7 @@ export type Product = {
 
 export type ShoppingListItem = Product & {
   completed: boolean;
+  quantity: number;
 };
 
 export type MapPoint = {

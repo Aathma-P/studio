@@ -26,13 +26,43 @@ export default function Home() {
   const { toast } = useToast();
 
   const handleAddItem = (product: Product) => {
-    if (!shoppingList.find((item) => item.id === product.id)) {
-      setShoppingList([...shoppingList, { ...product, completed: false }]);
-      toast({
-        title: "Item Added",
-        description: `${product.name} has been added to your list.`,
-      });
-    }
+    setShoppingList((prevList) => {
+      const existingItem = prevList.find((item) => item.id === product.id);
+      if (existingItem) {
+        return prevList.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        toast({
+          title: "Item Added",
+          description: `${product.name} has been added to your list.`,
+        });
+        return [...prevList, { ...product, quantity: 1, completed: false }];
+      }
+    });
+  };
+
+  const handleIncreaseQuantity = (productId: string) => {
+    setShoppingList((prevList) =>
+      prevList.map((item) =>
+        item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
+      )
+    );
+  };
+
+  const handleDecreaseQuantity = (productId: string) => {
+    setShoppingList((prevList) => {
+      const existingItem = prevList.find((item) => item.id === productId);
+      if (existingItem?.quantity === 1) {
+        return prevList.filter((item) => item.id !== productId);
+      } else {
+        return prevList.map((item) =>
+          item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
+        );
+      }
+    });
   };
 
   const handleAddItemById = (productId: string) => {
@@ -64,11 +94,11 @@ export default function Home() {
   const completedItems = shoppingList.filter((item) => item.completed);
 
   const listTotal = React.useMemo(() => {
-    return shoppingList.reduce((total, item) => total + item.price, 0);
+    return shoppingList.reduce((total, item) => total + (item.price * item.quantity), 0);
   }, [shoppingList]);
 
   const cartTotal = React.useMemo(() => {
-    return completedItems.reduce((total, item) => total + item.price, 0);
+    return completedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   }, [completedItems]);
 
   return (
@@ -123,6 +153,8 @@ export default function Home() {
             allProducts={ALL_PRODUCTS}
             listTotal={listTotal}
             cartTotal={cartTotal}
+            onIncreaseQuantity={handleIncreaseQuantity}
+            onDecreaseQuantity={handleDecreaseQuantity}
           />
         </div>
 
@@ -152,6 +184,8 @@ export default function Home() {
                   allProducts={ALL_PRODUCTS}
                   listTotal={listTotal}
                   cartTotal={cartTotal}
+                  onIncreaseQuantity={handleIncreaseQuantity}
+                  onDecreaseQuantity={handleDecreaseQuantity}
                 />
               )}
               {mobileView === "map" && <StoreMap items={pendingItems} />}

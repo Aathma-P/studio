@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Search, Trash2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Search, Trash2, X, ChevronDown, ChevronUp, Minus } from "lucide-react";
 
 import type { Product, ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,8 @@ interface ShoppingListProps {
   onAddItem: (product: Product) => void;
   onRemoveItem: (productId: string) => void;
   onToggleItem: (productId: string) => void;
+  onIncreaseQuantity: (productId: string) => void;
+  onDecreaseQuantity: (productId: string) => void;
   listTotal: number;
   cartTotal: number;
 }
@@ -30,12 +32,59 @@ const formatPrice = (price: number) => {
     }).format(price);
 }
 
+const ProductCard = ({ 
+    product, 
+    quantity,
+    onAddItem,
+    onIncreaseQuantity,
+    onDecreaseQuantity,
+}: { 
+    product: Product, 
+    quantity: number,
+    onAddItem: (product: Product) => void,
+    onIncreaseQuantity: (productId: string) => void,
+    onDecreaseQuantity: (productId: string) => void,
+}) => {
+    return (
+        <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+            <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[#E8F5E9]">
+                    <product.icon className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                    <p className="font-bold text-sm text-black">{product.name}</p>
+                    <p className="text-xs text-gray-500">{formatPrice(product.price)}</p>
+                </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-full bg-white p-1 shadow-sm">
+                {quantity > 0 ? (
+                    <>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-green-100 text-primary hover:bg-green-200" onClick={() => onDecreaseQuantity(product.id)}>
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-bold bg-[#4CAF50] text-white rounded-sm px-2">{quantity}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-green-100 text-primary hover:bg-green-200" onClick={() => onIncreaseQuantity(product.id)}>
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </>
+                ) : (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-primary text-primary-foreground" onClick={() => onAddItem(product)}>
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+        </div>
+    )
+}
+
 export default function ShoppingList({
   items,
   allProducts,
   onAddItem,
   onRemoveItem,
   onToggleItem,
+  onIncreaseQuantity,
+  onDecreaseQuantity,
   listTotal,
   cartTotal,
 }: ShoppingListProps) {
@@ -69,7 +118,6 @@ export default function ShoppingList({
       return acc;
     }, {} as Record<string, Product[]>);
 
-    // Sort products within each category by price
     for (const category in groups) {
         groups[category].sort((a,b) => a.price - b.price);
     }
@@ -83,14 +131,17 @@ export default function ShoppingList({
     searchInputRef.current?.focus();
   };
 
-  const handleAddItem = (product: Product) => {
-    onAddItem(product);
-    // Do not clear search to allow adding multiple items from search/browse
-  };
-
   const sortedItems = React.useMemo(() => items.sort((a, b) => a.price - b.price), [items]);
   const pendingItems = sortedItems.filter((item) => !item.completed);
   const completedItems = sortedItems.filter((item) => item.completed);
+  
+  const itemQuantities = React.useMemo(() => {
+      const quantities = new Map<string, number>();
+      items.forEach(item => {
+          quantities.set(item.id, item.quantity);
+      });
+      return quantities;
+  }, [items]);
 
   return (
     <div className="flex h-full flex-col bg-background text-card-foreground">
@@ -137,27 +188,14 @@ export default function ShoppingList({
               </h3>
               {searchResults.length > 0 ? (
                 searchResults.map((product) => (
-                  <div
+                  <ProductCard 
                     key={product.id}
-                    className="flex items-center justify-between rounded-md p-2 hover:bg-muted"
-                  >
-                    <div className="flex items-center gap-3">
-                      <product.icon className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <span className="text-sm">{product.name}</span>
-                        <p className="text-xs text-muted-foreground">{formatPrice(product.price)}</p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleAddItem(product)}
-                      disabled={items.some((i) => i.id === product.id)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    product={product}
+                    quantity={itemQuantities.get(product.id) || 0}
+                    onAddItem={onAddItem}
+                    onIncreaseQuantity={onIncreaseQuantity}
+                    onDecreaseQuantity={onDecreaseQuantity}
+                  />
                 ))
               ) : (
                 <p className="text-sm text-center text-muted-foreground py-4">
@@ -188,8 +226,8 @@ export default function ShoppingList({
                               item.completed && "line-through text-muted-foreground"
                             )}
                           >
-                            <span className="text-sm">{item.name}</span>
-                            <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
+                            <span className="text-sm">{item.name} (x{item.quantity})</span>
+                            <p className="text-xs text-muted-foreground">{formatPrice(item.price * item.quantity)}</p>
                           </label>
                           <Button
                             variant="ghost"
@@ -241,8 +279,8 @@ export default function ShoppingList({
                                   "line-through text-muted-foreground"
                               )}
                             >
-                                <span className="text-sm">{item.name}</span>
-                                <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
+                                <span className="text-sm">{item.name} (x{item.quantity})</span>
+                                <p className="text-xs text-muted-foreground">{formatPrice(item.price * item.quantity)}</p>
                             </label>
                             <Button
                               variant="ghost"
@@ -274,27 +312,14 @@ export default function ShoppingList({
                     <h4 className="mb-2 text-sm font-semibold">{category}</h4>
                     <div className="space-y-2">
                       {products.map((product) => (
-                        <div
-                          key={product.id}
-                          className="flex items-center justify-between rounded-md p-2 hover:bg-muted"
-                        >
-                           <div className="flex items-center gap-3">
-                             <product.icon className="h-5 w-5 text-muted-foreground" />
-                             <div>
-                               <span className="text-sm">{product.name}</span>
-                               <p className="text-xs text-muted-foreground">{formatPrice(product.price)}</p>
-                             </div>
-                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleAddItem(product)}
-                            disabled={items.some((i) => i.id === product.id)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
+                         <ProductCard 
+                            key={product.id}
+                            product={product}
+                            quantity={itemQuantities.get(product.id) || 0}
+                            onAddItem={onAddItem}
+                            onIncreaseQuantity={onIncreaseQuantity}
+                            onDecreaseQuantity={onDecreaseQuantity}
+                         />
                       ))}
                     </div>
                   </div>
