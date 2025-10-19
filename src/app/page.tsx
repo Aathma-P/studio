@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Map, Camera, ShoppingBasket, Search, List } from "lucide-react";
+import { Map, Camera, List } from "lucide-react";
 
 import type { ShoppingListItem, Product } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
@@ -20,7 +20,7 @@ export default function Home() {
   const [shoppingList, setShoppingList] = React.useState<ShoppingListItem[]>([]);
   const [view, setView] = React.useState<"map" | "ar">("map");
   const [mobileView, setMobileView] = React.useState<MobileView>("list");
-  
+
   const handleAddItem = (product: Product) => {
     if (!shoppingList.find((item) => item.id === product.id)) {
       setShoppingList([...shoppingList, { ...product, completed: false }]);
@@ -40,6 +40,15 @@ export default function Home() {
   };
 
   const pendingItems = shoppingList.filter((item) => !item.completed);
+  const completedItems = shoppingList.filter((item) => item.completed);
+
+  const listTotal = React.useMemo(() => {
+    return shoppingList.reduce((total, item) => total + item.price, 0);
+  }, [shoppingList]);
+
+  const cartTotal = React.useMemo(() => {
+    return completedItems.reduce((total, item) => total + item.price, 0);
+  }, [completedItems]);
 
   return (
     <div className="flex h-screen w-full flex-col bg-background">
@@ -69,7 +78,7 @@ export default function Home() {
           </Button>
         </div>
         <div className="md:hidden">
-            {/* Placeholder for potential mobile header actions */}
+          {/* Placeholder for potential mobile header actions */}
         </div>
       </header>
 
@@ -82,51 +91,87 @@ export default function Home() {
             onRemoveItem={handleRemoveItem}
             onToggleItem={handleToggleItem}
             allProducts={ALL_PRODUCTS}
+            listTotal={listTotal}
+            cartTotal={cartTotal}
           />
         </div>
 
         {/* Main Content Area */}
         <main className="flex flex-1 flex-col overflow-auto">
-           {/* Desktop View */}
-           <div className="hidden h-full md:block">
+          {/* Desktop View */}
+          <div className="hidden h-full md:block">
             {view === "map" ? (
               <StoreMap items={pendingItems} />
             ) : (
-              <ArView items={pendingItems} onItemScannedAndFound={handleToggleItem} />
+              <ArView
+                items={pendingItems}
+                onItemScannedAndFound={handleToggleItem}
+              />
             )}
-           </div>
+          </div>
 
-           {/* Mobile View */}
-           <div className="relative flex h-full flex-col md:hidden">
-             <div className="flex-1 overflow-y-auto pb-16">
-                {mobileView === 'list' && (
-                    <ShoppingList
-                        items={shoppingList}
-                        onAddItem={handleAddItem}
-                        onRemoveItem={handleRemoveItem}
-                        onToggleItem={handleToggleItem}
-                        allProducts={ALL_PRODUCTS}
-                    />
-                )}
-                {mobileView === 'map' && <StoreMap items={pendingItems} />}
-                {mobileView === 'ar' && <ArView items={pendingItems} onItemScannedAndFound={handleToggleItem} />}
-             </div>
+          {/* Mobile View */}
+          <div className="relative flex h-full flex-col md:hidden">
+            <div className="flex-1 overflow-y-auto pb-16">
+              {mobileView === "list" && (
+                <ShoppingList
+                  items={shoppingList}
+                  onAddItem={handleAddItem}
+                  onRemoveItem={handleRemoveItem}
+                  onToggleItem={handleToggleItem}
+                  allProducts={ALL_PRODUCTS}
+                  listTotal={listTotal}
+                  cartTotal={cartTotal}
+                />
+              )}
+              {mobileView === "map" && <StoreMap items={pendingItems} />}
+              {mobileView === "ar" && (
+                <ArView
+                  items={pendingItems}
+                  onItemScannedAndFound={handleToggleItem}
+                />
+              )}
+            </div>
 
             <div className="absolute bottom-0 left-0 right-0 flex h-16 shrink-0 items-center justify-around border-t bg-card">
-                 <Button variant="ghost" size="lg" className={cn("flex-col h-auto py-2", mobileView === "list" && "text-primary")} onClick={() => setMobileView("list")}>
-                    <List className="h-5 w-5"/>
-                    <span className="text-xs">List</span>
-                 </Button>
-                 <Button variant="ghost" size="lg" className={cn("flex-col h-auto py-2", mobileView === "map" && "text-primary")} onClick={() => setMobileView("map")}>
-                    <Map className="h-5 w-5"/>
-                    <span className="text-xs">Map</span>
-                 </Button>
-                 <Button variant="ghost" size="lg" className={cn("flex-col h-auto py-2", mobileView === "ar" && "text-primary")} onClick={() => setMobileView("ar")}>
-                    <Camera className="h-5 w-5"/>
-                    <span className="text-xs">AR</span>
-                 </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                className={cn(
+                  "flex-col h-auto py-2",
+                  mobileView === "list" && "text-primary"
+                )}
+                onClick={() => setMobileView("list")}
+              >
+                <List className="h-5 w-5" />
+                <span className="text-xs">List</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                className={cn(
+                  "flex-col h-auto py-2",
+                  mobileView === "map" && "text-primary"
+                )}
+                onClick={() => setMobileView("map")}
+              >
+                <Map className="h-5 w-5" />
+                <span className="text-xs">Map</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                className={cn(
+                  "flex-col h-auto py-2",
+                  mobileView === "ar" && "text-primary"
+                )}
+                onClick={() => setMobileView("ar")}
+              >
+                <Camera className="h-5 w-5" />
+                <span className="text-xs">AR</span>
+              </Button>
             </div>
-           </div>
+          </div>
         </main>
       </div>
     </div>

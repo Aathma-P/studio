@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -18,6 +19,15 @@ interface ShoppingListProps {
   onAddItem: (product: Product) => void;
   onRemoveItem: (productId: string) => void;
   onToggleItem: (productId: string) => void;
+  listTotal: number;
+  cartTotal: number;
+}
+
+const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(price);
 }
 
 export default function ShoppingList({
@@ -26,6 +36,8 @@ export default function ShoppingList({
   onAddItem,
   onRemoveItem,
   onToggleItem,
+  listTotal,
+  cartTotal,
 }: ShoppingListProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -42,19 +54,27 @@ export default function ShoppingList({
 
   const searchResults = React.useMemo(() => {
     if (!searchTerm) return [];
-    return allProducts.filter((product) =>
+    const filtered = allProducts.filter((product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    return filtered.sort((a, b) => a.price - b.price);
   }, [searchTerm, allProducts]);
 
   const groupedProducts = React.useMemo(() => {
-    return allProducts.reduce((acc, product) => {
+    const groups = allProducts.reduce((acc, product) => {
       if (!acc[product.category]) {
         acc[product.category] = [];
       }
       acc[product.category].push(product);
       return acc;
     }, {} as Record<string, Product[]>);
+
+    // Sort products within each category by price
+    for (const category in groups) {
+        groups[category].sort((a,b) => a.price - b.price);
+    }
+    return groups;
+
   }, [allProducts]);
 
   const handleClearSearch = () => {
@@ -68,13 +88,24 @@ export default function ShoppingList({
     // Do not clear search to allow adding multiple items from search/browse
   };
 
-  const pendingItems = items.filter((item) => !item.completed);
-  const completedItems = items.filter((item) => item.completed);
+  const sortedItems = React.useMemo(() => items.sort((a, b) => a.price - b.price), [items]);
+  const pendingItems = sortedItems.filter((item) => !item.completed);
+  const completedItems = sortedItems.filter((item) => item.completed);
 
   return (
     <div className="flex h-full flex-col bg-card text-card-foreground">
-      <div className="p-4">
+      <div className="p-4 border-b">
         <h2 className="text-lg font-semibold md:hidden">Shopping List</h2>
+        <div className="grid grid-cols-2 gap-4 text-center mt-2">
+            <div>
+                <p className="text-sm text-muted-foreground">In Cart</p>
+                <p className="text-xl font-bold">{formatPrice(cartTotal)}</p>
+            </div>
+             <div>
+                <p className="text-sm text-muted-foreground">List Total</p>
+                <p className="text-xl font-bold">{formatPrice(listTotal)}</p>
+            </div>
+        </div>
         <div className="relative mt-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -100,7 +131,7 @@ export default function ShoppingList({
       <ScrollArea className="flex-1">
         <div className="px-4 pb-4">
           {showSearchResults ? (
-            <div className="space-y-2">
+            <div className="space-y-2 pt-4">
               <h3 className="text-sm font-medium text-muted-foreground">
                 Search Results
               </h3>
@@ -112,7 +143,10 @@ export default function ShoppingList({
                   >
                     <div className="flex items-center gap-3">
                       <product.icon className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm">{product.name}</span>
+                      <div>
+                        <span className="text-sm">{product.name}</span>
+                        <p className="text-xs text-muted-foreground">{formatPrice(product.price)}</p>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
@@ -132,7 +166,7 @@ export default function ShoppingList({
               )}
             </div>
           ) : (
-            <>
+            <div className="pt-4">
               {items.length > 0 ? (
                 <>
                   {pendingItems.length > 0 && (
@@ -150,11 +184,12 @@ export default function ShoppingList({
                           <label
                             htmlFor={`item-${item.id}`}
                             className={cn(
-                              "flex-1 text-sm",
+                              "flex-1",
                               item.completed && "line-through text-muted-foreground"
                             )}
                           >
-                            {item.name}
+                            <span className="text-sm">{item.name}</span>
+                            <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
                           </label>
                           <Button
                             variant="ghost"
@@ -201,12 +236,13 @@ export default function ShoppingList({
                             <label
                               htmlFor={`item-${item.id}`}
                               className={cn(
-                                "flex-1 text-sm",
+                                "flex-1",
                                 item.completed &&
                                   "line-through text-muted-foreground"
                               )}
                             >
-                              {item.name}
+                                <span className="text-sm">{item.name}</span>
+                                <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
                             </label>
                             <Button
                               variant="ghost"
@@ -242,10 +278,13 @@ export default function ShoppingList({
                           key={product.id}
                           className="flex items-center justify-between rounded-md p-2 hover:bg-muted"
                         >
-                          <div className="flex items-center gap-3">
-                            <product.icon className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-sm">{product.name}</span>
-                          </div>
+                           <div className="flex items-center gap-3">
+                             <product.icon className="h-5 w-5 text-muted-foreground" />
+                             <div>
+                               <span className="text-sm">{product.name}</span>
+                               <p className="text-xs text-muted-foreground">{formatPrice(product.price)}</p>
+                             </div>
+                           </div>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -261,7 +300,7 @@ export default function ShoppingList({
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
       </ScrollArea>
