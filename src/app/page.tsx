@@ -25,12 +25,12 @@ export default function SplashPage() {
       >
         <div className="relative w-80 h-80">
           <Image
-            src="https://picsum.photos/seed/splash/320/320"
+            src="https://picsum.photos/seed/grocery-cart/320/320"
             alt="Splash"
             fill
             priority
             className="object-contain animate-fade-in"
-            data-ai-hint="logo"
+            data-ai-hint="grocery cart"
           />
         </div>
       </div>
