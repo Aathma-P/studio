@@ -203,7 +203,7 @@ export default function Home() {
                 variant="ghost"
                 size="lg"
                 className={cn(
-                  "flex-col h-auto py-2",
+                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground hover:text-primary",
                   mobileView === "list" && "text-primary"
                 )}
                 onClick={() => setMobileView("list")}
@@ -215,7 +215,7 @@ export default function Home() {
                 variant="ghost"
                 size="lg"
                 className={cn(
-                  "flex-col h-auto py-2",
+                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground hover:text-primary",
                   mobileView === "map" && "text-primary"
                 )}
                 onClick={() => setMobileView("map")}
@@ -227,7 +227,7 @@ export default function Home() {
                 variant="ghost"
                 size="lg"
                 className={cn(
-                  "flex-col h-auto py-2",
+                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground hover:text-primary",
                   mobileView === "ar" && "text-primary"
                 )}
                 onClick={() => setMobileView("ar")}
@@ -239,7 +239,7 @@ export default function Home() {
                 variant="ghost"
                 size="lg"
                 className={cn(
-                  "flex-col h-auto py-2",
+                  "flex-col h-auto py-2 hover:bg-transparent text-muted-foreground hover:text-primary",
                   mobileView === "scan" && "text-primary"
                 )}
                 onClick={() => setMobileView("scan")}
