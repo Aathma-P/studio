@@ -93,7 +93,7 @@ export default function ShoppingList({
   const completedItems = sortedItems.filter((item) => item.completed);
 
   return (
-    <div className="flex h-full flex-col bg-card text-card-foreground">
+    <div className="flex h-full flex-col bg-background text-card-foreground">
       <div className="p-4 border-b">
         <h2 className="text-lg font-semibold md:hidden">Shopping List</h2>
         <div className="grid grid-cols-2 gap-4 text-center mt-2">

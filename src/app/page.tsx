@@ -114,7 +114,7 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden md:grid md:grid-cols-[320px_1fr]">
         {/* Desktop Shopping List */}
-        <div className="hidden w-80 shrink-0 border-r md:flex md:flex-col">
+        <div className="hidden w-80 shrink-0 border-r bg-background md:flex md:flex-col">
           <ShoppingList
             items={shoppingList}
             onAddItem={handleAddItem}
@@ -164,7 +164,7 @@ export default function Home() {
               {mobileView === "scan" && <BarcodeScanner onScanSuccess={handleAddItemById} />}
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 flex h-16 shrink-0 items-center justify-around border-t bg-card">
+            <div className="absolute bottom-0 left-0 right-0 flex h-16 shrink-0 items-center justify-around border-t bg-background">
               <Button
                 variant="ghost"
                 size="lg"
