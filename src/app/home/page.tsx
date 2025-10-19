@@ -23,6 +23,11 @@ export default function HomePage() {
   const [view, setView] = React.useState<View>("map");
   const [mobileView, setMobileView] = React.useState<MobileView>("list");
   const { toast } = useToast();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleAddItem = (product: Product) => {
     setShoppingList((prevList) => {
@@ -165,13 +170,13 @@ export default function HomePage() {
           {/* Desktop View */}
           <div className="hidden h-full md:block">
             {view === "map" && <StoreMap items={pendingItems} />}
-            {view === "ar" && (
+            {view === "ar" && isClient && (
               <ArView
                 items={pendingItems}
                 onItemScannedAndFound={handleToggleItem}
               />
             )}
-            {view === "scan" && <BarcodeScanner onScanSuccess={handleAddItemById} />}
+            {view === "scan" && isClient && <BarcodeScanner onScanSuccess={handleAddItemById} />}
           </div>
 
           {/* Mobile View */}
@@ -191,13 +196,13 @@ export default function HomePage() {
                 />
               )}
               {mobileView === "map" && <StoreMap items={pendingItems} />}
-              {mobileView === "ar" && (
+              {mobileView === "ar" && isClient && (
                 <ArView
                   items={pendingItems}
                   onItemScannedAndFound={handleToggleItem}
                 />
               )}
-              {mobileView === "scan" && <BarcodeScanner onScanSuccess={handleAddItemById} />}
+              {mobileView === "scan" && isClient && <BarcodeScanner onScanSuccess={handleAddItemById} />}
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 flex h-16 shrink-0 items-center justify-around border-t bg-background">
