@@ -114,7 +114,7 @@ export default function HomePage() {
       <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 text-card-foreground md:px-6">
         <div className="flex items-center gap-2 font-semibold">
           <Icons.logo className="h-6 w-6 text-primary-foreground" />
-          <span className="text-lg font-bold text-primary-foreground">GROC_AI</span>
+          <span className="text-lg font-bold text-primary-foreground">GROC_AR</span>
         </div>
         
         {/* Desktop Navigation */}
