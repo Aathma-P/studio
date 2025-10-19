@@ -25,7 +25,7 @@ export default function SplashScreen() {
       >
         <div className="relative w-80 h-80">
           <Image
-            src="https://picsum.photos/seed/grocery-cart/300/300"
+            src="https://picsum.photos/seed/shopping/300/300"
             alt="Splash Screen"
             data-ai-hint="grocery cart"
             fill
