@@ -97,11 +97,11 @@ export default function ShoppingList({
       <div className="p-4 border-b">
         <h2 className="text-lg font-semibold md:hidden">Shopping List</h2>
         <div className="grid grid-cols-2 gap-4 text-center mt-2">
-            <div className="bg-green-400 text-emerald-900 rounded-lg p-2 shadow">
+            <div className="bg-green-300 text-emerald-900 rounded-lg p-2 shadow">
                 <p className="text-sm font-semibold">In Cart</p>
                 <p className="text-xl font-bold">{formatPrice(cartTotal)}</p>
             </div>
-             <div className="bg-green-400 text-emerald-900 rounded-lg p-2 shadow">
+             <div className="bg-green-300 text-emerald-900 rounded-lg p-2 shadow">
                 <p className="text-sm font-semibold">List Total</p>
                 <p className="text-xl font-bold">{formatPrice(listTotal)}</p>
             </div>
