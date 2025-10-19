@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import HomePage from "@/components/HomePage";
+import splashImg from "@/assets/images/Splash.png";
 
 export default function SplashScreen() {
   const [showSplash, setShowSplash] = useState(true);
@@ -12,7 +13,7 @@ export default function SplashScreen() {
     const timer = setTimeout(() => {
       setFadeOut(true);
       setTimeout(() => setShowSplash(false), 700);
-    }, 1200); // Show splash for 3 seconds
+    }, 1500); // ⏱️ show splash for 1.5 seconds
     return () => clearTimeout(timer);
   }, []);
 
@@ -25,12 +26,11 @@ export default function SplashScreen() {
       >
         {/* Fullscreen splash image */}
         <Image
-          src="https://picsum.photos/seed/splash-screen/1080/1920"
+          src={splashImg}
           alt="Splash Screen"
           fill
           priority
           className="object-cover w-full h-full"
-          data-ai-hint="grocery app logo"
         />
       </div>
     );

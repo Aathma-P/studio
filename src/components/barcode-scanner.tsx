@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { BarcodeScanner as Scanner } from "react-qr-barcode-scanner";
+import Scanner from "react-qr-barcode-scanner";
 import { LoaderCircle, CameraOff, ScanLine } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
