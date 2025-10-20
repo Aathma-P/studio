@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem, PurchaseRecord, PurchasedItem } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
-import emptyCartImage from "@/assets/images/viewcart.png";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -129,7 +128,6 @@ export default function CartPage() {
                                             <div>
                                                 <p className="font-medium text-gray-800">{item.name}</p>
                                                 <p className="font-semibold text-green-700 mt-1">{formatPrice(item.price * item.quantity)}</p>
-                                                <p className="text-xs text-gray-400 italic mt-1">You saved {formatPrice(item.price * 0.1)}</p>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end justify-between h-full">
@@ -172,18 +170,15 @@ export default function CartPage() {
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 pt-10">
-                        {emptyCartImage ? (
-                            <Image 
-                                src={emptyCartImage}
-                                alt="Empty Cart Illustration"
-                                width={600}
-                                height={400}
-                                className="h-48 md:h-64 w-auto object-contain mb-8"
-                                priority
-                            />
-                        ) : (
-                            <ShoppingCart className="h-48 md:h-64 w-auto text-gray-300 mb-8" />
-                        )}
+                        <Image
+                            src="https://picsum.photos/seed/viewcart/600/400"
+                            alt="Empty Cart Illustration"
+                            width={600}
+                            height={400}
+                            className="h-48 md:h-64 w-auto object-contain mb-8"
+                            priority
+                            data-ai-hint="empty cart"
+                        />
                         <h2 className="text-xl font-semibold text-gray-800">Your cart is empty</h2>
                         <p className="mt-2 text-gray-600">Looks like you haven't added anything yet.</p>
                         <Button className="mt-6 bg-green-600 text-white hover:bg-green-700 font-medium rounded-lg" onClick={() => router.push('/home')}>
@@ -219,5 +214,3 @@ export default function CartPage() {
         </div>
     );
 }
-
-    
