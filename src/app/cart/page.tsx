@@ -145,7 +145,7 @@ export default function CartPage() {
                             {items.map(item => {
                                 const ItemIcon = item.icon;
                                 return (
-                                    <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4 flex items-center justify-between hover:shadow-md transition-all duration-200 relative">
+                                    <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4 flex items-start justify-between hover:shadow-md transition-all duration-200">
                                         <div className="flex items-center gap-4">
                                             <div className="w-16 h-16 bg-[#A3D9A5]/30 rounded-xl flex items-center justify-center p-3">
                                                 {ItemIcon ? <ItemIcon className="w-full h-full text-[#1B7E48]" /> : <div className="w-8 h-8 bg-gray-200 rounded-md" />}
@@ -157,11 +157,11 @@ export default function CartPage() {
                                                 <p className="text-xs text-gray-400 italic mt-1">You saved {formatPrice(item.price * 0.1)}</p>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col items-end justify-between h-full absolute top-4 right-4">
+                                        <div className="flex flex-col items-end justify-between gap-y-3">
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500 transition" onClick={() => handleRemoveItem(item.id)}>
                                                 <Trash2 size={18}/>
                                             </Button>
-                                            <div className="flex items-center gap-2 mt-auto">
+                                            <div className="flex items-center gap-2">
                                                  <button onClick={() => handleDecreaseQuantity(item.id)} className="border border-gray-300 rounded-full h-7 w-7 flex items-center justify-center text-gray-700 hover:bg-green-50 hover:text-green-600 transition">
                                                     <Minus size={14}/>
                                                  </button>
