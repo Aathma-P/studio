@@ -16,23 +16,21 @@ export default function ScanPage() {
         {/* Banner image */}
         <Image
           src="https://picsum.photos/seed/scan-page-banner/800/600"
+          data-ai-hint="scan banner"
           alt="Scan the image"
           width={800}
           height={600}
-          className="rounded-xl object-cover w-full h-auto"
+          className="rounded-xl object-contain w-full h-auto"
           priority
-          data-ai-hint="scan banner character"
         />
 
-        {/* Button overlay */}
-        <div className="absolute bottom-6 left-6">
-          <button
-            onClick={handleScanClick}
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg"
-          >
-            Scan
-          </button>
-        </div>
+        {/* Button overlay — positioned like the reference image */}
+        <button
+          onClick={handleScanClick}
+          className="absolute top-[35%] left-[10%] bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-md shadow-md transition-all duration-200"
+        >
+          scan
+        </button>
       </div>
     </div>
   );
