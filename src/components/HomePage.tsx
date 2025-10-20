@@ -3,9 +3,11 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Map, Camera, List, ScanLine as Scan } from "lucide-react";
+import { Map, Camera, List, ScanLine as Scan, User } from "lucide-react";
+import { useSearchParams } from 'next/navigation'
 
-import type { ShoppingListItem, Product } from "@/lib/types";
+
+import type { ShoppingListItem, Product, PurchaseRecord } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
 
 import { Button } from "@/components/ui/button";
@@ -17,21 +19,51 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import scanBanner from "@/assets/images/scan-banner.png";
+import ProfilePage from "./profile-page";
 
-type View = "list" | "map" | "ar" | "scan" | "scan-banner";
+
+type View = "list" | "map" | "ar" | "scan" | "scan-banner" | "profile";
 
 export default function HomePage() {
   const [view, setView] = React.useState<View>("list");
   const [shoppingList, setShoppingList] = React.useState<ShoppingListItem[]>([]);
+  const [previousPurchases, setPreviousPurchases] = React.useState<PurchaseRecord[]>([]);
   const [listTotal, setListTotal] = React.useState(0);
   const [cartTotal, setCartTotal] = React.useState(0);
   const [isClient, setIsClient] = React.useState(false);
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   React.useEffect(() => {
     setIsClient(true);
+    // Load purchase history from localStorage on initial mount
+    try {
+      const storedPurchases = localStorage.getItem('previousPurchases');
+      if (storedPurchases) {
+        setPreviousPurchases(JSON.parse(storedPurchases));
+      }
+    } catch (e) {
+      console.error("Failed to load purchase history from localStorage", e);
+    }
   }, []);
   
+  // This effect listens for a query parameter to refresh purchase history after checkout
+  React.useEffect(() => {
+    if (searchParams.get('refresh')) {
+      try {
+        const storedPurchases = localStorage.getItem('previousPurchases');
+        if (storedPurchases) {
+          setPreviousPurchases(JSON.parse(storedPurchases));
+        }
+      } catch (e) {
+        console.error("Failed to load purchase history from localStorage", e);
+      }
+      // Optionally remove the query param from URL without reloading
+      const newUrl = window.location.pathname;
+      window.history.replaceState({...window.history.state, as: newUrl, url: newUrl}, '', newUrl);
+    }
+  }, [searchParams]);
+
   React.useEffect(() => {
     const total = shoppingList.reduce((sum, item) => sum + item.price * item.quantity, 0);
     setListTotal(total);
@@ -146,6 +178,14 @@ export default function HomePage() {
             >
                 <Scan /> Barcode Scan
             </Button>
+            <Button
+                variant={view === 'profile' ? 'secondary' : 'default'}
+                size="sm"
+                onClick={() => setView('profile')}
+                className={cn("gap-2 transition-all", view !== 'profile' && inactiveNavButtonClass)}
+            >
+                <User /> Profile
+            </Button>
         </div>
       </header>
       
@@ -188,6 +228,7 @@ export default function HomePage() {
             </div>
           )}
            {view === 'scan' && isClient && <BarcodeScanner onScanSuccess={handleScanSuccess} />}
+           {view === 'profile' && isClient && <ProfilePage purchases={previousPurchases} />}
            {view === 'list' && (
              <div className="h-full md:hidden">
                <ShoppingList
@@ -239,6 +280,14 @@ export default function HomePage() {
         >
           <Scan />
           <span className="text-xs">Scan</span>
+        </Button>
+        <Button
+          variant="ghost"
+          className={cn("flex h-auto flex-col gap-1 px-2 py-1", view === "profile" ? 'text-green-500' : 'text-muted-foreground')}
+          onClick={() => setView("profile")}
+        >
+          <User />
+          <span className="text-xs">Profile</span>
         </Button>
       </footer>
     </div>

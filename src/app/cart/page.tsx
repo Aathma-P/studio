@@ -7,7 +7,7 @@ import { ArrowLeft, Trash2, Plus, Minus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import type { ShoppingListItem } from "@/lib/types";
+import type { ShoppingListItem, PurchaseRecord, PurchasedItem } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
 
 const formatPrice = (price: number) => {
@@ -96,20 +96,41 @@ export default function CartPage() {
             });
             return;
         }
+
+        const newPurchase: PurchaseRecord = {
+            date: new Date().toISOString(),
+            items: items.map(item => ({
+                name: item.name,
+                quantity: item.quantity,
+                totalPrice: item.price * item.quantity,
+            })),
+            total: grandTotal,
+        };
+
+        try {
+            const existingPurchases: PurchaseRecord[] = JSON.parse(localStorage.getItem('previousPurchases') || '[]');
+            localStorage.setItem('previousPurchases', JSON.stringify([newPurchase, ...existingPurchases]));
+        } catch (e) {
+            console.error("Could not save purchase to localStorage", e);
+        }
+
         toast({
-            title: "Checkout Successful!",
-            description: "Your order has been placed. Thank you for shopping with us.",
-            duration: 5000,
+            variant: "default",
+            title: "🎉 Order placed successfully!",
+            description: "You can view your previous purchases in your profile.",
+            duration: 3000,
         });
+
         setTimeout(() => {
             setItems([]);
-            router.push('/home');
-        }, 2000);
+            // Pass a query param to tell the home page to refresh its purchase history state
+            router.push('/home?refresh=true');
+        }, 1000);
     };
 
     return (
         <div className="flex flex-col min-h-screen bg-[#F9FAFB]">
-            <header className="flex items-center justify-between p-4 md:p-6 bg-white sticky top-0 z-10">
+            <header className="flex items-center justify-between p-4 md:p-6 bg-white sticky top-0 z-10 max-w-[500px] mx-auto w-full">
                 <Button variant="ghost" size="icon" onClick={() => router.push('/home')}>
                     <ArrowLeft className="text-[#1F2937]"/>
                 </Button>

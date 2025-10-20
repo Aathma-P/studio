@@ -1,4 +1,5 @@
 
+
 export type Product = {
   id: string;
   name: string;
@@ -19,4 +20,16 @@ export type ShoppingListItem = Product & {
 export type MapPoint = {
   x: number;
   y: number;
+};
+
+export type PurchasedItem = {
+  name: string;
+  quantity: number;
+  totalPrice: number;
+};
+
+export type PurchaseRecord = {
+  date: string; // ISO date string
+  items: PurchasedItem[];
+  total: number;
 };
