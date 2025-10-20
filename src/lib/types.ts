@@ -33,3 +33,10 @@ export type PurchaseRecord = {
   items: PurchasedItem[];
   total: number;
 };
+
+export type MapSection = {
+    name: string;
+    icon: React.ComponentType<{ className?: string, style?: React.CSSProperties }>;
+    position: MapPoint;
+    size: { width: number, height: number };
+}

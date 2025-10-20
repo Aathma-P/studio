@@ -1,6 +1,7 @@
 
-import type { Product } from './types';
+import type { Product, MapSection } from './types';
 import { Icons } from '@/components/icons';
+import { Carrot, Citrus } from 'lucide-react';
 
 export const ALL_PRODUCTS: Product[] = [
   // Produce (Aisle 1)
@@ -53,6 +54,16 @@ export const STORE_LAYOUT = [
     [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
+
+export const MAP_SECTIONS: MapSection[] = [
+    { name: 'Fruits', icon: Citrus, position: { x: 1, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Vegetables', icon: Carrot, position: { x: 1, y: 4 }, size: { width: 1, height: 2 } },
+    { name: 'Dairy', icon: Icons.milk, position: { x: 3, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Meat', icon: Icons.meat, position: { x: 5, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Bakery', icon: Icons.bakery, position: { x: 7, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Pantry', icon: Icons.pantry, position: { x: 9, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Frozen', icon: Icons.frozen, position: { x: 11, y: 1 }, size: { width: 1, height: 2 } },
+]
 
 export const AISLE_CENTERS = [
   { aisle: 1, x: 1 },

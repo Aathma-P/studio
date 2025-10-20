@@ -1,8 +1,9 @@
+
 "use client";
 
 import * as React from 'react';
 import type { ShoppingListItem, MapPoint } from '@/lib/types';
-import { STORE_LAYOUT, ENTRANCE_POS, CHECKOUT_POS } from '@/lib/data';
+import { STORE_LAYOUT, ENTRANCE_POS, CHECKOUT_POS, MAP_SECTIONS } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { ShoppingBasket } from 'lucide-react';
 import { findPath } from '@/lib/pathfinding';
@@ -165,6 +166,31 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
               />
             ))
           ))}
+
+          {/* Render Map Sections */}
+          {MAP_SECTIONS.map((section) => {
+            const SectionIcon = section.icon;
+            const iconSize = Math.max(16, cellSize * 0.6);
+            return (
+              <div
+                key={section.name}
+                className="absolute flex flex-col items-center justify-center text-neutral-500"
+                style={{
+                  left: section.position.x * cellSize,
+                  top: section.position.y * cellSize,
+                  width: cellSize * section.size.width,
+                  height: cellSize * section.size.height,
+                  fontSize: Math.max(8, cellSize * 0.3)
+                }}
+                title={section.name}
+              >
+                  <SectionIcon style={{width: iconSize, height: iconSize}} />
+                  <span className="mt-1 font-semibold">{section.name}</span>
+              </div>
+            )
+          })}
+
+
           {/* Render item locations */}
           {sortedItems.map((item, index) => {
               const aisleX = getAisleShelfX(item.location.aisle);
