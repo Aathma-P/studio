@@ -1,9 +1,8 @@
-
 "use client";
 
 import * as React from "react";
-import { Plus, Search, Trash2, X, ChevronDown, ChevronUp, Minus } from "lucide-react";
-
+import { Plus, Search, Trash2, X, ChevronDown, ChevronUp, Minus, ShoppingCart } from "lucide-react";
+import Link from "next/link";
 import type { Product, ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -155,6 +154,12 @@ export default function ShoppingList({
       return quantities;
   }, [items]);
 
+  const cartLinkHref = React.useMemo(() => {
+    if (completedItems.length === 0) return '/cart';
+    const cartData = encodeURIComponent(JSON.stringify(completedItems));
+    return `/cart?items=${cartData}`;
+  }, [completedItems]);
+
   let productIndex = 0;
 
   return (
@@ -171,6 +176,12 @@ export default function ShoppingList({
                 <p className="text-xl font-bold">{formatPrice(listTotal)}</p>
             </div>
         </div>
+        <Link href={cartLinkHref} passHref>
+          <Button variant="outline" className="w-full mt-3">
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              View Cart ({completedItems.length})
+          </Button>
+        </Link>
         <div className="relative mt-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
