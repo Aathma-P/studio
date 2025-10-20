@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import scanBanner from "@/assets/images/scan.banner.png";
+import scanBanner from "@/assets/images/scan-banner.png";
 
 export default function ScanPage() {
   const router = useRouter();
