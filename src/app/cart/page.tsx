@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, ShoppingCart, CreditCard, Trash2, Plus, Minus } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -111,35 +111,38 @@ export default function CartPage() {
                 {items.length > 0 ? (
                     <>
                         <div className="space-y-4">
-                            {items.map(item => (
-                                <Card key={item.id} className="rounded-xl shadow-md p-4 mb-4">
-                                    <CardContent className="p-0 flex items-center gap-4 relative">
-                                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                                          <item.icon className="w-8 h-8 text-muted-foreground" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-gray-800">{item.name}</p>
-                                            <p className="text-sm text-gray-500">1pc</p>
-                                            <p className="font-medium mt-1">{formatPrice(item.price * item.quantity)}</p>
-                                            <p className="text-xs text-gray-400 mt-1">You saved {formatPrice(item.price * 0.1)}</p>
-                                        </div>
-                                        <div className="absolute top-0 right-0">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500" onClick={() => handleRemoveItem(item.id)}>
-                                                <Trash2 size={18}/>
-                                            </Button>
-                                        </div>
-                                        <div className="absolute bottom-0 right-0 flex items-center gap-2">
-                                             <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => handleDecreaseQuantity(item.id)} disabled={item.quantity <= 1}>
-                                                <Minus size={14}/>
-                                            </Button>
-                                            <span className="font-bold text-center w-4">{item.quantity}</span>
-                                            <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => handleIncreaseQuantity(item.id)}>
-                                                <Plus size={14}/>
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                            {items.map(item => {
+                                const ItemIcon = item.icon;
+                                return (
+                                    <Card key={item.id} className="rounded-xl shadow-md p-4 mb-4">
+                                        <CardContent className="p-0 flex items-center gap-4 relative">
+                                            <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                                                <ItemIcon className="w-8 h-8 text-muted-foreground" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-bold text-gray-800">{item.name}</p>
+                                                <p className="text-sm text-gray-500">1pc</p>
+                                                <p className="font-medium mt-1">{formatPrice(item.price * item.quantity)}</p>
+                                                <p className="text-xs text-gray-400 mt-1">You saved {formatPrice(item.price * 0.1)}</p>
+                                            </div>
+                                            <div className="absolute top-0 right-0">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500" onClick={() => handleRemoveItem(item.id)}>
+                                                    <Trash2 size={18}/>
+                                                </Button>
+                                            </div>
+                                            <div className="absolute bottom-0 right-0 flex items-center gap-2">
+                                                 <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => handleDecreaseQuantity(item.id)} disabled={item.quantity <= 1}>
+                                                    <Minus size={14}/>
+                                                </Button>
+                                                <span className="font-bold text-center w-4">{item.quantity}</span>
+                                                <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => handleIncreaseQuantity(item.id)}>
+                                                    <Plus size={14}/>
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                         </div>
 
                         <Card className="mt-6 rounded-xl shadow-md">
@@ -185,3 +188,4 @@ export default function CartPage() {
             </footer>
         </div>
     );
+}
