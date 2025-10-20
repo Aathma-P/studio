@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingCart, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -209,12 +209,23 @@ export default function CartPage() {
 
             {items.length > 0 && (
                 <footer className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-                    <div className="grid grid-cols-2 gap-4 max-w-[500px] mx-auto">
-                        <Button variant="outline" className="border-green-600 text-green-700 hover:bg-green-50 hover:text-green-700 font-medium rounded-lg h-11" onClick={() => router.push('/home')}>
-                            Back to Shopping
+                    <div className="flex items-center justify-between gap-4 max-w-[500px] mx-auto">
+                        <Button
+                        variant="outline"
+                        className="w-1/2 border-2 border-green-600 text-green-700 font-medium hover:bg-green-50 transition"
+                        onClick={() => router.push('/home')}
+                        >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Shopping
                         </Button>
-                        <Button onClick={handleCheckout} className="bg-green-600 text-white hover:bg-green-700 font-medium rounded-lg h-11">
-                            Proceed to Checkout
+
+                        <Button
+                        onClick={handleCheckout}
+                        disabled={items.length === 0}
+                        className="w-1/2 bg-green-600 hover:bg-green-700 text-white font-semibold transition"
+                        >
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Proceed to Checkout
                         </Button>
                     </div>
                 </footer>
