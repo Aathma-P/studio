@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem } from "@/lib/types";
 
-
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -50,7 +49,6 @@ export default function CartPage() {
         toast({
             title: "Checkout Successful!",
             description: "Your order has been placed. Thank you for shopping with GROC_AR.",
-            className: "bg-green-100 border-green-300 text-green-800",
             duration: 5000,
         });
         // Optionally, redirect after a delay
@@ -68,9 +66,7 @@ export default function CartPage() {
             </header>
 
             <main className="flex-1 overflow-auto p-4 md:p-6">
-                <Card
-                  className="relative overflow-hidden bg-card"
-                >
+                <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-card-foreground">
                            <ShoppingCart /> Your Items
