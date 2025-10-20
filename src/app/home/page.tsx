@@ -172,14 +172,6 @@ export default function HomePage() {
                 <Camera /> AR View
             </Button>
             <Button
-                variant={view === 'scan' || view === 'scan-banner' ? 'secondary' : 'default'}
-                size="sm"
-                onClick={() => setView('scan-banner')}
-                className={cn("gap-2 transition-all", view !== 'scan' && view !== 'scan-banner' && inactiveNavButtonClass)}
-            >
-                <Scan /> Barcode Scan
-            </Button>
-            <Button
                 variant={view === 'profile' ? 'secondary' : 'default'}
                 size="sm"
                 onClick={() => setView('profile')}
@@ -200,6 +192,7 @@ export default function HomePage() {
             onToggleItem={handleToggleItem}
             onIncreaseQuantity={handleIncreaseQuantity}
             onDecreaseQuantity={handleDecreaseQuantity}
+            onScanClick={() => setView("scan-banner")}
             listTotal={listTotal}
             cartTotal={cartTotal}
           />
@@ -240,6 +233,7 @@ export default function HomePage() {
                   onToggleItem={handleToggleItem}
                   onIncreaseQuantity={handleIncreaseQuantity}
                   onDecreaseQuantity={handleDecreaseQuantity}
+                  onScanClick={() => setView("scan-banner")}
                   listTotal={listTotal}
                   cartTotal={cartTotal}
                 />
@@ -273,14 +267,6 @@ export default function HomePage() {
         >
           <Camera />
           <span className="text-xs">AR</span>
-        </Button>
-        <Button
-          variant="ghost"
-          className={cn("flex h-auto flex-col gap-1 px-2 py-1", (view === "scan" || view === "scan-banner") ? 'text-green-500' : 'text-muted-foreground')}
-          onClick={() => setView("scan-banner")}
-        >
-          <Scan />
-          <span className="text-xs">Scan</span>
         </Button>
         <Button
           variant="ghost"

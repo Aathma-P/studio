@@ -1,7 +1,8 @@
+
 "use client";
 
 import * as React from "react";
-import { Plus, Search, Trash2, X, ChevronDown, ChevronUp, Minus, ShoppingCart } from "lucide-react";
+import { Plus, Search, Trash2, X, ChevronDown, ChevronUp, Minus, ShoppingCart, ScanLine } from "lucide-react";
 import Link from "next/link";
 import type { Product, ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ interface ShoppingListProps {
   onToggleItem: (productId: string) => void;
   onIncreaseQuantity: (productId: string) => void;
   onDecreaseQuantity: (productId: string) => void;
+  onScanClick: () => void;
   listTotal: number;
   cartTotal: number;
 }
@@ -96,6 +98,7 @@ export default function ShoppingList({
   onToggleItem,
   onIncreaseQuantity,
   onDecreaseQuantity,
+  onScanClick,
   listTotal,
   cartTotal,
 }: ShoppingListProps) {
@@ -330,9 +333,13 @@ export default function ShoppingList({
               )}
              
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Browse All Items
-                </h3>
+                <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Browse All Items</h3>
+                    <button onClick={onScanClick} className="flex items-center gap-1 text-green-600 hover:text-green-700 transition">
+                      <ScanLine className="h-5 w-5" />
+                      <span className="text-sm font-semibold">Scan</span>
+                    </button>
+                </div>
                 {Object.entries(groupedProducts).map(([category, products]) => (
                   <div key={category}>
                     <h4 className="mb-2 text-sm font-semibold">{category}</h4>
