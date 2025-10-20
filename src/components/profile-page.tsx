@@ -62,9 +62,9 @@ export default function ProfilePage({ purchases }: ProfilePageProps) {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <p className="font-semibold text-green-700">{formatPrice(purchase.total)}</p>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500">
+                                            <div className="h-8 w-8 flex items-center justify-center text-gray-500">
                                                 {openCollapsible === purchase.date ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                            </Button>
+                                            </div>
                                         </div>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
