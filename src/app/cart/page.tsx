@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, ShoppingCart, CreditCard, X, CheckCircle } from "lucide-react";
+import Image from "next/image";
+import { ArrowLeft, ShoppingCart, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem } from "@/lib/types";
-import viewCartBanner from "@/assets/images/viewcart.png";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -24,6 +25,7 @@ export default function CartPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [items, setItems] = React.useState<ShoppingListItem[]>([]);
+    const cartBannerImage = PlaceHolderImages.find(img => img.id === 'cart-banner');
 
     React.useEffect(() => {
         const cartData = searchParams.get('items');
@@ -67,14 +69,17 @@ export default function CartPage() {
             </header>
 
             <main className="flex-1 overflow-auto p-4 md:p-6">
+                {cartBannerImage ? (
                 <Card
                   className="relative overflow-hidden bg-card"
-                  style={{
-                    backgroundImage: `url(${viewCartBanner.src})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
                 >
+                  <Image
+                    src={cartBannerImage.imageUrl}
+                    alt={cartBannerImage.description}
+                    fill
+                    style={{objectFit: 'cover', objectPosition: 'center'}}
+                    data-ai-hint={cartBannerImage.imageHint}
+                  />
                   <div className="absolute inset-0 bg-black/20" />
                   <div className="relative">
                     <CardHeader>
@@ -101,6 +106,10 @@ export default function CartPage() {
                     </CardContent>
                   </div>
                 </Card>
+                ) : (
+                    <Card><CardHeader><CardTitle>Your Items</CardTitle></CardHeader><CardContent><p>Your cart is empty.</p></CardContent></Card>
+                )}
+
 
                 {items.length > 0 && (
                     <Card className="mt-6">
@@ -133,4 +142,11 @@ export default function CartPage() {
                         Back to Shopping
                     </Button>
                     <Button onClick={handleCheckout} disabled={items.length === 0} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                        <CreditCard className="
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Proceed to Checkout
+                    </Button>
+                </div>
+            </footer>
+        </div>
+    );
+}
