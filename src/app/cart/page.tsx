@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem, PurchaseRecord, PurchasedItem } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import emptyCartImage from "@/assets/images/viewcart.png";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -27,7 +27,6 @@ export default function CartPage() {
     const { toast } = useToast();
     const [items, setItems] = React.useState<ShoppingListItem[]>([]);
     
-    const emptyCartImage = PlaceHolderImages.find(p => p.id === 'empty-cart-illust');
 
     React.useEffect(() => {
         const cartData = searchParams.get('items');
@@ -175,13 +174,12 @@ export default function CartPage() {
                     <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 pt-10">
                         {emptyCartImage ? (
                             <Image 
-                                src={emptyCartImage.imageUrl}
+                                src={emptyCartImage}
                                 alt="Empty Cart Illustration"
                                 width={600}
                                 height={400}
                                 className="h-48 md:h-64 w-auto object-contain mb-8"
                                 priority
-                                data-ai-hint={emptyCartImage.imageHint}
                             />
                         ) : (
                             <ShoppingCart className="h-48 md:h-64 w-auto text-gray-300 mb-8" />
@@ -221,3 +219,5 @@ export default function CartPage() {
         </div>
     );
 }
+
+    
