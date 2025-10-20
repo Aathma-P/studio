@@ -159,7 +159,7 @@ export default function ShoppingList({
 
   const cartLinkHref = React.useMemo(() => {
     if (completedItems.length === 0) return '/cart';
-    const cartData = encodeURIComponent(JSON.stringify(completedItems));
+    const cartData = encodeURIComponent(JSON.stringify(completedItems.map(item => ({ id: item.id, quantity: item.quantity, completed: item.completed }))));
     return `/cart?items=${cartData}`;
   }, [completedItems]);
 
@@ -190,7 +190,7 @@ export default function ShoppingList({
           <Input
             ref={searchInputRef}
             placeholder="Search or browse products..."
-            className="pl-10"
+            className="pl-10 bg-white text-gray-800 placeholder:text-gray-400"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
