@@ -177,7 +177,7 @@ export default function ShoppingList({
             </div>
         </div>
         <Link href={cartLinkHref} passHref>
-          <Button variant="outline" className="w-full mt-3">
+          <Button variant="outline" className="w-full mt-3 text-[#1B7E48] border-[#1B7E48] hover:bg-[#1B7E48]/10 hover:text-[#1B7E48]">
               <ShoppingCart className="mr-2 h-4 w-4" />
               View Cart ({completedItems.length})
           </Button>
@@ -363,3 +363,5 @@ export default function ShoppingList({
     </div>
   );
 }
+
+    
