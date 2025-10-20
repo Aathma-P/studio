@@ -327,7 +327,7 @@ export default function ShoppingList({
                    <Separator className="my-4" />
                 </>
               ) : (
-                 <div className="py-2 text-center text-sm text-muted-foreground">
+                 <div className="py-2 my-4 text-center text-sm text-muted-foreground">
                   Your shopping list is empty.
                 </div>
               )}

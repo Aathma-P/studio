@@ -121,7 +121,7 @@ export default function CartPage() {
 
         setTimeout(() => {
             router.push("/home?refresh=true");
-        }, 1500);
+        }, 1000);
     };
 
     return (
