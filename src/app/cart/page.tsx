@@ -126,7 +126,7 @@ export default function CartPage() {
     return (
         <div className="flex flex-col min-h-screen bg-[#F9FAFB]">
             <header className="flex items-center justify-between p-4 md:p-6 bg-white sticky top-0 z-10 max-w-[500px] mx-auto w-full">
-                <Button variant="ghost" size="icon" onClick={() => router.push('/home')} className="rounded-full hover:bg-gray-100">
+                <Button variant="ghost" size="icon" onClick={() => router.push('/home')} className="rounded-full hover:bg-gray-200">
                     <ArrowLeft className="text-[#1F2937]"/>
                 </Button>
                 <h1 className="text-lg md:text-xl font-semibold tracking-tight text-[#1F2937]">My Cart</h1>
@@ -233,5 +233,4 @@ export default function CartPage() {
             )}
         </div>
     );
-
-    
+}
