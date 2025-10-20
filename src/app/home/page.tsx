@@ -246,7 +246,10 @@ export default function HomePage() {
       <footer className="flex shrink-0 items-center justify-around border-t py-2 md:hidden">
         <Button
           variant="ghost"
-          className={cn("flex h-auto flex-col gap-1 px-2 py-1", view === "list" ? 'text-green-500' : 'text-muted-foreground')}
+          className={cn(
+            "flex h-auto flex-col gap-1 px-2 py-1 transition-colors duration-200 hover:bg-transparent",
+            view === "list" ? "text-green-600" : "text-muted-foreground hover:text-green-600"
+          )}
           onClick={() => setView("list")}
         >
           <List />
@@ -254,7 +257,10 @@ export default function HomePage() {
         </Button>
         <Button
           variant="ghost"
-          className={cn("flex h-auto flex-col gap-1 px-2 py-1", view === "map" ? 'text-green-500' : 'text-muted-foreground')}
+          className={cn(
+            "flex h-auto flex-col gap-1 px-2 py-1 transition-colors duration-200 hover:bg-transparent",
+            view === "map" ? "text-green-600" : "text-muted-foreground hover:text-green-600"
+          )}
           onClick={() => setView("map")}
         >
           <Map />
@@ -262,7 +268,10 @@ export default function HomePage() {
         </Button>
         <Button
           variant="ghost"
-          className={cn("flex h-auto flex-col gap-1 px-2 py-1", view === "ar" ? 'text-green-500' : 'text-muted-foreground')}
+          className={cn(
+            "flex h-auto flex-col gap-1 px-2 py-1 transition-colors duration-200 hover:bg-transparent",
+            view === "ar" ? "text-green-600" : "text-muted-foreground hover:text-green-600"
+          )}
           onClick={() => setView("ar")}
         >
           <Camera />
@@ -270,7 +279,10 @@ export default function HomePage() {
         </Button>
         <Button
           variant="ghost"
-          className={cn("flex h-auto flex-col gap-1 px-2 py-1", view === "profile" ? 'text-green-500' : 'text-muted-foreground')}
+          className={cn(
+            "flex h-auto flex-col gap-1 px-2 py-1 transition-colors duration-200 hover:bg-transparent",
+            view === "profile" ? "text-green-600" : "text-muted-foreground hover:text-green-600"
+          )}
           onClick={() => setView("profile")}
         >
           <User />
