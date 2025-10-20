@@ -2,31 +2,35 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import scanIntro from "@/assets/images/scan-banner.png"; // replace with your uploaded image path
+import scanBanner from "@/assets/images/scan-banner.png";
 
-export default function ScanIntroPage() {
+export default function ScanPage() {
   const router = useRouter();
 
   const handleScanClick = () => {
-    router.push("/scan/scanner");
+    router.push("/scan/scanner"); // navigate to scanner page
   };
 
   return (
     <div className="flex items-center justify-center h-screen w-full bg-[#EAF6EE]">
-      <div className="flex flex-col items-center justify-center max-w-md w-full p-4">
+      <div className="relative max-w-md w-full">
+        {/* Banner image */}
         <Image
-          src={scanIntro}
+          src={scanBanner}
           alt="Scan the image"
-          className="object-contain w-full h-auto mb-6 rounded-xl"
+          className="rounded-xl object-cover w-full h-auto"
           priority
         />
 
-        <button
-          onClick={handleScanClick}
-          className="bg-[#2CA44F] text-white font-semibold text-lg px-8 py-2 rounded-md shadow-md hover:bg-[#259543] transition-all duration-300"
-        >
-          Scan
-        </button>
+        {/* Button overlay */}
+        <div className="absolute bottom-6 left-6">
+          <button
+            onClick={handleScanClick}
+            className="bg-[#2CA44F] text-white text-lg font-semibold px-6 py-2 rounded-md shadow-lg hover:bg-[#259543] transition-all duration-300"
+          >
+            Scan
+          </button>
+        </div>
       </div>
     </div>
   );

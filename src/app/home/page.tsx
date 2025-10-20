@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Map, Camera, List, ScanLine as Scan } from "lucide-react";
 
 import type { ShoppingListItem, Product } from "@/lib/types";
@@ -15,7 +16,7 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-type View = "list" | "map" | "ar" | "scan";
+type View = "list" | "map" | "ar" | "scan" | "scan-banner";
 
 export default function HomePage() {
   const [view, setView] = React.useState<View>("list");
@@ -136,10 +137,10 @@ export default function HomePage() {
                 <Camera /> AR View
             </Button>
             <Button
-                variant={view === 'scan' ? 'secondary' : 'default'}
+                variant={view === 'scan' || view === 'scan-banner' ? 'secondary' : 'default'}
                 size="sm"
-                onClick={() => setView('scan')}
-                className={cn("gap-2 transition-all", view !== 'scan' && inactiveNavButtonClass)}
+                onClick={() => setView('scan-banner')}
+                className={cn("gap-2 transition-all", view !== 'scan' && view !== 'scan-banner' && inactiveNavButtonClass)}
             >
                 <Scan /> Barcode Scan
             </Button>
@@ -164,6 +165,24 @@ export default function HomePage() {
         <main className="flex-1 overflow-auto">
            {view === 'map' && <StoreMap items={shoppingList} />}
            {view === 'ar' && isClient && <ArView items={shoppingList.filter(i => !i.completed)} onItemScannedAndFound={handleItemScannedAndFound} />}
+           {view === "scan-banner" && (
+            <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-4">
+              <Image 
+                src="https://picsum.photos/seed/scan-banner/600/400" 
+                alt="Scan Banner" 
+                width={600}
+                height={400}
+                data-ai-hint="scan banner"
+                className="w-full max-w-md rounded-lg shadow-md" 
+              />
+              <button
+                onClick={() => setView("scan")}
+                className="mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg"
+              >
+                Scan
+              </button>
+            </div>
+          )}
            {view === 'scan' && isClient && <BarcodeScanner onScanSuccess={handleScanSuccess} />}
            {view === 'list' && (
              <div className="h-full md:hidden">
@@ -211,8 +230,8 @@ export default function HomePage() {
         </Button>
         <Button
           variant="ghost"
-          className={cn("flex h-auto flex-col gap-1 px-2 py-1", view === "scan" ? 'text-green-500' : 'text-muted-foreground')}
-          onClick={() => setView("scan")}
+          className={cn("flex h-auto flex-col gap-1 px-2 py-1", (view === "scan" || view === "scan-banner") ? 'text-green-500' : 'text-muted-foreground')}
+          onClick={() => setView("scan-banner")}
         >
           <Scan />
           <span className="text-xs">Scan</span>
