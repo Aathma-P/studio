@@ -88,44 +88,17 @@ export default function CartPage() {
     const grandTotal = subtotal + tax;
 
     const handleCheckout = () => {
-        if (items.length === 0) {
-            toast({
-                variant: "destructive",
-                title: "Your cart is empty",
-                description: "Add items to your cart before checking out.",
-            });
-            return;
-        }
-
-        const newPurchase: PurchaseRecord = {
-            date: new Date().toISOString(),
-            items: items.map(item => ({
-                name: item.name,
-                quantity: item.quantity,
-                totalPrice: item.price * item.quantity,
-            })),
-            total: grandTotal,
-        };
-
-        try {
-            const existingPurchases: PurchaseRecord[] = JSON.parse(localStorage.getItem('previousPurchases') || '[]');
-            localStorage.setItem('previousPurchases', JSON.stringify([newPurchase, ...existingPurchases]));
-        } catch (e) {
-            console.error("Could not save purchase to localStorage", e);
-        }
-
-        toast({
-            variant: "default",
-            title: "🎉 Order placed successfully!",
-            description: "You can view your previous purchases in your profile.",
-            duration: 3000,
-        });
-
-        setTimeout(() => {
-            setItems([]);
-            // Pass a query param to tell the home page to refresh its purchase history state
-            router.push('/home?refresh=true');
-        }, 1000);
+      toast({
+        title: "🎉 Order placed successfully!",
+        description: "You can view your previous purchases in your profile.",
+        className: "bg-green-100 border-green-300 text-green-800 font-medium",
+        duration: 3000,
+      });
+    
+      // Wait a short moment before navigating back to the home page
+      setTimeout(() => {
+        router.push("/home"); // Redirect to main page
+      }, 1500);
     };
 
     return (
@@ -157,7 +130,7 @@ export default function CartPage() {
                                                 <p className="text-xs text-gray-400 italic mt-1">You saved {formatPrice(item.price * 0.1)}</p>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col items-end justify-between gap-y-3">
+                                        <div className="flex flex-col items-end justify-between h-full">
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500 transition" onClick={() => handleRemoveItem(item.id)}>
                                                 <Trash2 size={18}/>
                                             </Button>
@@ -208,7 +181,7 @@ export default function CartPage() {
             </main>
 
             {items.length > 0 && (
-                <footer className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+                <footer className="p-4 border-t bg-white sticky bottom-0">
                     <div className="flex items-center justify-between gap-4 max-w-[500px] mx-auto">
                         <Button
                         variant="outline"
