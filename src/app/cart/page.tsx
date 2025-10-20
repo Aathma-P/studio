@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem, PurchaseRecord, PurchasedItem } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
-import illust from "@/assets/images/illust.png";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -91,17 +90,37 @@ export default function CartPage() {
     const grandTotal = subtotal + tax;
 
     const handleCheckout = () => {
-      toast({
-        title: "🎉 Order placed successfully!",
-        description: "You can view your previous purchases in your profile.",
-        className: "bg-green-100 border-green-300 text-green-800 font-medium",
-        duration: 3000,
-      });
+        if (items.length === 0) return;
     
-      // Wait a short moment before navigating back to the home page
-      setTimeout(() => {
-        router.push("/home"); // Redirect to main page
-      }, 1500);
+        const newPurchase: PurchaseRecord = {
+          date: new Date().toISOString(),
+          items: items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            totalPrice: item.price * item.quantity,
+          })),
+          total: grandTotal,
+        };
+    
+        try {
+          const storedPurchasesRaw = localStorage.getItem('previousPurchases');
+          const storedPurchases: PurchaseRecord[] = storedPurchasesRaw ? JSON.parse(storedPurchasesRaw) : [];
+          const updatedPurchases = [newPurchase, ...storedPurchases];
+          localStorage.setItem('previousPurchases', JSON.stringify(updatedPurchases));
+        } catch (e) {
+          console.error("Failed to save purchase to localStorage", e);
+        }
+
+        toast({
+            title: "🎉 Order placed successfully!",
+            description: "You can view your previous purchases in your profile.",
+            className: "bg-green-100 border-green-300 text-green-800 font-medium",
+            duration: 3000,
+        });
+
+        setTimeout(() => {
+            router.push("/home?refresh=true");
+        }, 1500);
     };
 
     return (
@@ -172,7 +191,7 @@ export default function CartPage() {
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 pt-10">
                         <Image
-                          src={illust}
+                          src="https://picsum.photos/seed/empty-cart/600/400"
                           alt="Empty Cart Illustration"
                           width={600}
                           height={400}
@@ -214,4 +233,5 @@ export default function CartPage() {
             )}
         </div>
     );
-}
+
+    
