@@ -13,7 +13,7 @@ export default function ScanPage() {
   return (
     <div className="flex items-center justify-center h-screen w-full bg-[#EAF6EE] p-4">
       <div className="relative w-full max-w-md">
-        {/* Banner image */}
+        {/* Use a placeholder image to avoid build errors */}
         <Image
           src="https://picsum.photos/seed/scan-page-banner/800/600"
           data-ai-hint="scan banner"
@@ -24,10 +24,10 @@ export default function ScanPage() {
           priority
         />
 
-        {/* Button overlay — positioned like the reference image */}
+        {/* Green button inside the image, positioned like in reference */}
         <button
           onClick={handleScanClick}
-          className="absolute top-[35%] left-[10%] bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-md shadow-md transition-all duration-200"
+          className="absolute top-[40%] left-[10%] bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-md shadow-md transition-all duration-200"
         >
           scan
         </button>
