@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingCart, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem, PurchaseRecord, PurchasedItem } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
+import illust from "@/assets/images/illust.png";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -168,8 +170,13 @@ export default function CartPage() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 pt-20">
-                        <ShoppingCart size={48} className="mb-4 text-gray-400"/>
+                    <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 pt-10">
+                        <Image 
+                            src={illust}
+                            alt="Empty Cart"
+                            className="h-48 md:h-64 w-auto object-contain mb-8"
+                            priority
+                        />
                         <h2 className="text-xl font-semibold text-gray-800">Your cart is empty</h2>
                         <p className="mt-2 text-gray-600">Looks like you haven't added anything yet.</p>
                         <Button className="mt-6 bg-green-600 text-white hover:bg-green-700 font-medium rounded-lg" onClick={() => router.push('/home')}>
@@ -205,5 +212,3 @@ export default function CartPage() {
         </div>
     );
 }
-
-    
