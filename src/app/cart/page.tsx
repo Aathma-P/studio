@@ -125,7 +125,6 @@ export default function CartPage() {
                                             </div>
                                             <div>
                                                 <p className="font-medium text-gray-800">{item.name}</p>
-                                                <p className="text-sm text-gray-500">1pc</p>
                                                 <p className="font-semibold text-green-700 mt-1">{formatPrice(item.price * item.quantity)}</p>
                                                 <p className="text-xs text-gray-400 italic mt-1">You saved {formatPrice(item.price * 0.1)}</p>
                                             </div>
@@ -206,3 +205,5 @@ export default function CartPage() {
         </div>
     );
 }
+
+    
