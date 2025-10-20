@@ -19,7 +19,7 @@ import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import scanBanner from "@/assets/images/scan-banner.png";
-import ProfilePage from "./profile-page";
+import ProfilePage from "@/components/profile-page";
 
 
 type View = "list" | "map" | "ar" | "scan" | "scan-banner" | "profile";
