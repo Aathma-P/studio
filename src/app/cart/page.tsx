@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem, PurchaseRecord, PurchasedItem } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
+import illust from "@/assets/images/illust.png";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -191,7 +192,7 @@ export default function CartPage() {
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 pt-10">
                         <Image
-                          src="https://picsum.photos/seed/empty-cart/600/400"
+                          src={illust}
                           alt="Empty Cart Illustration"
                           width={600}
                           height={400}
