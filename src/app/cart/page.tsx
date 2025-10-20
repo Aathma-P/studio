@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem } from "@/lib/types";
+import viewCartBanner from "@/assets/images/viewcart.png";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -66,29 +67,39 @@ export default function CartPage() {
             </header>
 
             <main className="flex-1 overflow-auto p-4 md:p-6">
-                <Card>
+                <Card
+                  className="relative overflow-hidden bg-card"
+                  style={{
+                    backgroundImage: `url(${viewCartBanner.src})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                >
+                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="relative">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                           <ShoppingCart className="text-primary"/> Your Items
+                        <CardTitle className="flex items-center gap-2 text-card-foreground">
+                           <ShoppingCart /> Your Items
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {items.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="space-y-4 text-card-foreground">
                                 {items.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center">
+                                    <div key={item.id} className="flex justify-between items-center bg-white/20 backdrop-blur-sm p-3 rounded-lg">
                                         <div>
                                             <p className="font-semibold">{item.name}</p>
-                                            <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                                            <p className="text-sm opacity-90">Qty: {item.quantity}</p>
                                         </div>
                                         <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-muted-foreground text-center py-8">Your cart is empty.</p>
+                            <p className="text-card-foreground text-center py-8">Your cart is empty.</p>
                         )}
                     </CardContent>
+                  </div>
                 </Card>
 
                 {items.length > 0 && (
@@ -122,11 +133,4 @@ export default function CartPage() {
                         Back to Shopping
                     </Button>
                     <Button onClick={handleCheckout} disabled={items.length === 0} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Proceed to Checkout
-                    </Button>
-                </div>
-            </footer>
-        </div>
-    );
-}
+                        <CreditCard className="
