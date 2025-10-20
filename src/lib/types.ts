@@ -37,6 +37,7 @@ export type PurchaseRecord = {
 export type MapSection = {
     name: string;
     icon: React.ComponentType<{ className?: string, style?: React.CSSProperties }>;
+    color: string;
     position: MapPoint;
     size: { width: number, height: number };
 }

@@ -56,13 +56,13 @@ export const STORE_LAYOUT = [
 ];
 
 export const MAP_SECTIONS: MapSection[] = [
-    { name: 'Fruits', icon: Citrus, position: { x: 1, y: 1 }, size: { width: 1, height: 2 } },
-    { name: 'Vegetables', icon: Carrot, position: { x: 1, y: 4 }, size: { width: 1, height: 2 } },
-    { name: 'Dairy', icon: Icons.milk, position: { x: 3, y: 1 }, size: { width: 1, height: 2 } },
-    { name: 'Meat', icon: Icons.meat, position: { x: 5, y: 1 }, size: { width: 1, height: 2 } },
-    { name: 'Bakery', icon: Icons.bakery, position: { x: 7, y: 1 }, size: { width: 1, height: 2 } },
-    { name: 'Pantry', icon: Icons.pantry, position: { x: 9, y: 1 }, size: { width: 1, height: 2 } },
-    { name: 'Frozen', icon: Icons.frozen, position: { x: 11, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Fruits', icon: Citrus, color: 'text-orange-500', position: { x: 1, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Vegetables', icon: Carrot, color: 'text-green-600', position: { x: 1, y: 4 }, size: { width: 1, height: 2 } },
+    { name: 'Dairy', icon: Icons.milk, color: 'text-blue-400', position: { x: 3, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Meat', icon: Icons.meat, color: 'text-red-500', position: { x: 5, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Bakery', icon: Icons.bakery, color: 'text-yellow-600', position: { x: 7, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Pantry', icon: Icons.pantry, color: 'text-amber-700', position: { x: 9, y: 1 }, size: { width: 1, height: 2 } },
+    { name: 'Frozen', icon: Icons.frozen, color: 'text-cyan-500', position: { x: 11, y: 1 }, size: { width: 1, height: 2 } },
 ]
 
 export const AISLE_CENTERS = [
