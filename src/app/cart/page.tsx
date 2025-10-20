@@ -71,7 +71,6 @@ export default function CartPage() {
                 <Card
                   className="relative overflow-hidden bg-card"
                 >
-                  <div className="relative">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-card-foreground">
                            <ShoppingCart /> Your Items
@@ -94,7 +93,6 @@ export default function CartPage() {
                             <p className="text-card-foreground text-center py-8">Your cart is empty.</p>
                         )}
                     </CardContent>
-                  </div>
                 </Card>
 
                 {items.length > 0 && (
