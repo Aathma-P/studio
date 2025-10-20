@@ -216,7 +216,7 @@ export default function CartPage() {
                         onClick={() => router.push('/home')}
                         >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Shopping
+                        Home
                         </Button>
 
                         <Button
@@ -225,7 +225,7 @@ export default function CartPage() {
                         className="w-1/2 bg-green-600 hover:bg-green-700 text-white font-semibold transition"
                         >
                         <CreditCard className="mr-2 h-4 w-4" />
-                        Proceed to Checkout
+                        Checkout
                         </Button>
                     </div>
                 </footer>
