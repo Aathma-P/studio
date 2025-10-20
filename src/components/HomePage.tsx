@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -15,6 +16,7 @@ import BarcodeScanner from "@/components/barcode-scanner";
 import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import scanBanner from "@/assets/images/scan-banner.png";
 
 type View = "list" | "map" | "ar" | "scan" | "scan-banner";
 
@@ -166,21 +168,23 @@ export default function HomePage() {
            {view === 'map' && <StoreMap items={shoppingList} />}
            {view === 'ar' && isClient && <ArView items={shoppingList.filter(i => !i.completed)} onItemScannedAndFound={handleItemScannedAndFound} />}
            {view === "scan-banner" && (
-            <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-4">
-              <Image 
-                src="https://picsum.photos/seed/scan-banner/600/400" 
-                alt="Scan Banner" 
-                width={600}
-                height={400}
-                data-ai-hint="scan banner"
-                className="w-full max-w-md rounded-lg shadow-md" 
-              />
-              <button
-                onClick={() => setView("scan")}
-                className="mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg"
-              >
-                Scan
-              </button>
+            <div className="flex items-center justify-center h-full w-full bg-[#EAF6EE] p-4">
+              <div className="relative w-full max-w-md">
+                <Image
+                  src={scanBanner}
+                  alt="Scan the image"
+                  width={800}
+                  height={600}
+                  className="rounded-xl object-contain w-full h-auto"
+                  priority
+                />
+                <button
+                  onClick={() => setView("scan")}
+                  className="absolute top-[40%] left-[10%] bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-md shadow-md transition-all duration-200"
+                >
+                  Scan
+                </button>
+              </div>
             </div>
           )}
            {view === 'scan' && isClient && <BarcodeScanner onScanSuccess={handleScanSuccess} />}
