@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -8,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem } from "@/lib/types";
+import { ALL_PRODUCTS } from "@/lib/data";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -28,8 +30,21 @@ export default function CartPage() {
         const cartData = searchParams.get('items');
         if (cartData) {
             try {
-                const parsedItems = JSON.parse(decodeURIComponent(cartData));
-                setItems(parsedItems);
+                const parsedItemsFromUrl: Pick<ShoppingListItem, 'id' | 'quantity' | 'completed'>[] = JSON.parse(decodeURIComponent(cartData));
+                
+                // Re-hydrate the items with full product details, including the icon component
+                const fullItems = parsedItemsFromUrl.map(urlItem => {
+                    const productDetails = ALL_PRODUCTS.find(p => p.id === urlItem.id);
+                    if (!productDetails) return null;
+                    return {
+                        ...productDetails,
+                        quantity: urlItem.quantity,
+                        completed: urlItem.completed,
+                    };
+                }).filter((item): item is ShoppingListItem => item !== null);
+                
+                setItems(fullItems);
+
             } catch (error) {
                 console.error("Failed to parse cart items:", error);
                 toast({
@@ -117,7 +132,7 @@ export default function CartPage() {
                                     <Card key={item.id} className="rounded-xl shadow-md p-4 mb-4">
                                         <CardContent className="p-0 flex items-center gap-4 relative">
                                             <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                                                <ItemIcon className="w-8 h-8 text-muted-foreground" />
+                                                {ItemIcon ? <ItemIcon className="w-8 h-8 text-muted-foreground" /> : <div className="w-8 h-8 bg-muted-foreground/20 rounded-md" />}
                                             </div>
                                             <div className="flex-1">
                                                 <p className="font-bold text-gray-800">{item.name}</p>
