@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import scanBanner from "@/assets/images/scan-banner.png";
 
 export default function ScanPage() {
   const router = useRouter();
@@ -12,21 +11,24 @@ export default function ScanPage() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen w-full bg-[#EAF6EE]">
-      <div className="relative max-w-md w-full">
+    <div className="flex items-center justify-center h-screen w-full bg-[#EAF6EE] p-4">
+      <div className="relative w-full max-w-md">
         {/* Banner image */}
         <Image
-          src={scanBanner}
+          src="https://picsum.photos/seed/scan-page-banner/800/600"
           alt="Scan the image"
+          width={800}
+          height={600}
           className="rounded-xl object-cover w-full h-auto"
           priority
+          data-ai-hint="scan banner character"
         />
 
         {/* Button overlay */}
         <div className="absolute bottom-6 left-6">
           <button
             onClick={handleScanClick}
-            className="bg-[#2CA44F] text-white text-lg font-semibold px-6 py-2 rounded-md shadow-lg hover:bg-[#259543] transition-all duration-300"
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg"
           >
             Scan
           </button>
