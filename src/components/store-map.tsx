@@ -185,10 +185,10 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
                 title={section.name}
               >
                   <SectionIcon 
-                    className={cn(section.color)}
+                    className={cn(section.color, 'opacity-80')}
                     style={{width: iconSize, height: iconSize}} 
                   />
-                  <span className="mt-1 font-semibold">{section.name}</span>
+                  <span className={cn("mt-1 font-semibold", section.color)}>{section.name}</span>
               </div>
             )
           })}
