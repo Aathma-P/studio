@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import type { ShoppingListItem } from "@/lib/types";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -25,7 +25,6 @@ export default function CartPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [items, setItems] = React.useState<ShoppingListItem[]>([]);
-    const cartBannerImage = PlaceHolderImages.find(img => img.id === 'cart-banner');
 
     React.useEffect(() => {
         const cartData = searchParams.get('items');
@@ -69,18 +68,9 @@ export default function CartPage() {
             </header>
 
             <main className="flex-1 overflow-auto p-4 md:p-6">
-                {cartBannerImage ? (
                 <Card
                   className="relative overflow-hidden bg-card"
                 >
-                  <Image
-                    src={cartBannerImage.imageUrl}
-                    alt={cartBannerImage.description}
-                    fill
-                    style={{objectFit: 'cover', objectPosition: 'center'}}
-                    data-ai-hint={cartBannerImage.imageHint}
-                  />
-                  <div className="absolute inset-0 bg-black/20" />
                   <div className="relative">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-card-foreground">
@@ -106,10 +96,6 @@ export default function CartPage() {
                     </CardContent>
                   </div>
                 </Card>
-                ) : (
-                    <Card><CardHeader><CardTitle>Your Items</CardTitle></CardHeader><CardContent><p>Your cart is empty.</p></CardContent></Card>
-                )}
-
 
                 {items.length > 0 && (
                     <Card className="mt-6">
