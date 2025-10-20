@@ -11,6 +11,12 @@
       "description": "A vibrant image of a shopping cart filled with fresh groceries, used as a banner on the cart summary page.",
       "imageUrl": "https://images.unsplash.com/photo-1576719218362-01af43ab192a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzaG9wcGluZyUyMGNhcnR8ZW58MHx8fHwxNzYwOTQ3MTA0fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "shopping cart"
+    },
+    {
+      "id": "empty-cart-illust",
+      "description": "An illustration or photo for the empty cart screen.",
+      "imageUrl": "https://images.unsplash.com/photo-1594549208400-128687ad97ef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzaG9wcGluZyUyMGNhcnQlMjBpbGx1c3RyYXRpb258ZW58MHx8fHwxNzYwOTY4NDY2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "shopping cart illustration"
     }
   ]
 }
