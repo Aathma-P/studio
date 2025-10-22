@@ -241,7 +241,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         
         setTimeout(() => {
             if (result.isFound) {
-                // IMPORTANT: Update parent state *after* navigation has had a chance to advance.
                 onItemScannedAndFound(itemToScan.id);
             }
             goToNextInstruction();
@@ -251,14 +250,15 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
     } catch (error) {
         console.error("AI scan failed:", error);
+        const errorMessage = error instanceof Error ? error.message : "Could not analyze the image.";
         toast({
             variant: "destructive",
             title: "Scan Failed",
-            description: "Could not analyze the image. Please try again.",
+            description: "The AI scan failed. Please try again.",
         });
-        setScanResult({isFound: false, guidance: "The AI scan failed. Please try again."})
+        setScanResult({isFound: false, guidance: "Scan failed. Please align with the shelf and try again."})
         setTimeout(() => {
-            goToNextInstruction();
+            // Don't advance instruction on failure, let user retry
             setIsScanning(false);
             setScanResult(null);
         }, 3000);
@@ -423,7 +423,3 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
-
-    
-
-    
