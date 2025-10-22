@@ -159,10 +159,10 @@ export default function CartPage() {
                                     <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4 flex items-start justify-between hover:shadow-md transition-all duration-200">
                                         <div className="flex items-center gap-4">
                                             <div className="w-16 h-16 bg-[#A3D9A5]/30 rounded-xl flex items-center justify-center p-3">
-                                                {typeof ItemIcon === 'function' ? (
-                                                    <ItemIcon className="w-full h-full text-[#1B7E48]" />
-                                                ) : (
+                                                {typeof ItemIcon !== 'function' ? (
                                                     <Image src={ItemIcon} alt={item.name} width={40} height={40} className="rounded-md object-contain" />
+                                                ) : (
+                                                    <ItemIcon className="w-full h-full text-[#1B7E48]" />
                                                 )}
                                             </div>
                                             <div>

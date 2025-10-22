@@ -64,10 +64,10 @@ const ProductCard = ({
         <div className="flex items-center justify-between rounded-lg bg-muted p-3">
             <div className="flex items-center gap-3">
                 <div className={cn("flex h-12 w-12 items-center justify-center rounded-md", colorClass)}>
-                    {typeof Icon === 'function' ? (
-                      <Icon className="h-6 w-6" />
-                    ) : (
+                    {typeof Icon !== 'function' ? (
                       <Image src={Icon} alt={product.name} width={32} height={32} className="rounded-md object-contain" />
+                    ) : (
+                      <Icon className="h-6 w-6" />
                     )}
                 </div>
                 <div>
