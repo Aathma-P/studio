@@ -1,12 +1,12 @@
 
 import type { Product, MapSection } from './types';
 import { Icons } from '@/components/icons';
-import { Carrot, Citrus } from 'lucide-react';
+import { Carrot, Citrus, Banana } from 'lucide-react';
 
 export const ALL_PRODUCTS: Product[] = [
   // Produce (Aisle 1)
   { id: 'prod-1', name: 'Apples', category: 'Produce', icon: Icons.apple, price: 2.50, location: { aisle: 1, section: 2 } },
-  { id: 'prod-2', name: 'Bananas', category: 'Produce', icon: Icons.apple, price: 1.20, location: { aisle: 1, section: 3 } },
+  { id: 'prod-2', name: 'Bananas', category: 'Produce', icon: Banana, price: 1.20, location: { aisle: 1, section: 3 } },
   { id: 'prod-3', name: 'Carrots', category: 'Produce', icon: Icons.apple, price: 1.80, location: { aisle: 1, section: 5 } },
   { id: 'prod-4', name: 'Lettuce', category: 'Produce', icon: Icons.apple, price: 2.00, location: { aisle: 1, section: 6 } },
 

@@ -1,10 +1,12 @@
 
 
+import type { StaticImageData } from "next/image";
+
 export type Product = {
   id: string;
   name: string;
   category: 'Produce' | 'Dairy' | 'Meat' | 'Bakery' | 'Pantry' | 'Frozen';
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string }> | StaticImageData;
   price: number;
   location: {
     aisle: number;

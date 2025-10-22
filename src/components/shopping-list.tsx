@@ -4,6 +4,7 @@
 import * as React from "react";
 import { Plus, Search, Trash2, X, ChevronDown, ChevronUp, Minus, ShoppingCart, ScanLine } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Product, ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -58,11 +59,16 @@ const ProductCard = ({
     onDecreaseQuantity: (productId: string) => void,
     colorClass: string,
 }) => {
+    const Icon = product.icon;
     return (
         <div className="flex items-center justify-between rounded-lg bg-muted p-3">
             <div className="flex items-center gap-3">
                 <div className={cn("flex h-12 w-12 items-center justify-center rounded-md", colorClass)}>
-                    <product.icon className="h-6 w-6" />
+                    {typeof Icon === 'function' ? (
+                      <Icon className="h-6 w-6" />
+                    ) : (
+                      <Image src={Icon} alt={product.name} width={32} height={32} className="rounded-md object-contain" />
+                    )}
                 </div>
                 <div>
                     <p className="font-bold text-sm text-black">{product.name}</p>
@@ -370,5 +376,3 @@ export default function ShoppingList({
     </div>
   );
 }
-
-    

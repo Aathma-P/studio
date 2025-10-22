@@ -135,6 +135,10 @@ export default function CartPage() {
         }, 1000); // Simulate network delay
     };
 
+    if (!isClient) {
+      return null;
+    }
+
     return (
         <div className="flex flex-col min-h-screen bg-[#F9FAFB]">
             <header className="flex items-center justify-between p-4 md:p-6 bg-white sticky top-0 z-10 max-w-[500px] mx-auto w-full">
@@ -155,7 +159,11 @@ export default function CartPage() {
                                     <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4 flex items-start justify-between hover:shadow-md transition-all duration-200">
                                         <div className="flex items-center gap-4">
                                             <div className="w-16 h-16 bg-[#A3D9A5]/30 rounded-xl flex items-center justify-center p-3">
-                                                {ItemIcon ? <ItemIcon className="w-full h-full text-[#1B7E48]" /> : <div className="w-8 h-8 bg-gray-200 rounded-md" />}
+                                                {typeof ItemIcon === 'function' ? (
+                                                    <ItemIcon className="w-full h-full text-[#1B7E48]" />
+                                                ) : (
+                                                    <Image src={ItemIcon} alt={item.name} width={40} height={40} className="rounded-md object-contain" />
+                                                )}
                                             </div>
                                             <div>
                                                 <p className="font-medium text-gray-800">{item.name}</p>
