@@ -50,7 +50,7 @@ export default function HomePage() {
   
   // This effect listens for a query parameter to refresh purchase history after checkout
   React.useEffect(() => {
-    if (searchParams.get('refresh')) {
+    if (searchParams.get('refresh') && isClient) {
       try {
         const storedPurchases = localStorage.getItem('previousPurchases');
         if (storedPurchases) {
@@ -63,7 +63,7 @@ export default function HomePage() {
       const newUrl = window.location.pathname;
       window.history.replaceState({...window.history.state, as: newUrl, url: newUrl}, '', newUrl);
     }
-  }, [searchParams]);
+  }, [searchParams, isClient]);
 
   React.useEffect(() => {
     const total = shoppingList.reduce((sum, item) => sum + item.price * item.quantity, 0);

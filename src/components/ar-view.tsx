@@ -285,7 +285,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       )
   }
 
-  if (hasCameraPermission === false && orientation === 'portrait') {
+  if (hasCameraPermission === false) {
     return (
         <div className="w-full h-full flex items-center justify-center bg-black p-4">
             <Alert variant="destructive" className="max-w-sm">

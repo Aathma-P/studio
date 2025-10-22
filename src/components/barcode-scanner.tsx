@@ -23,9 +23,9 @@ export default function BarcodeScanner({ onScanSuccess }: BarcodeScannerProps) {
         return;
       }
       try {
+        // Just check for permission, don't keep the stream
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         setHasCameraPermission(true);
-        // Stop the stream immediately, the scanner will request it again
         stream.getTracks().forEach(track => track.stop());
       } catch (error) {
         console.error("Error accessing camera:", error);

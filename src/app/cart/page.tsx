@@ -30,9 +30,10 @@ export default function CartPage() {
     const { toast } = useToast();
     const [items, setItems] = React.useState<ShoppingListItem[]>([]);
     const [checkoutState, setCheckoutState] = React.useState<CheckoutState>('idle');
+    const [isClient, setIsClient] = React.useState(false);
     
-
     React.useEffect(() => {
+        setIsClient(true);
         const cartData = searchParams.get('items');
         if (cartData) {
             try {
@@ -95,7 +96,7 @@ export default function CartPage() {
     const grandTotal = subtotal + tax;
 
     const handleCheckout = () => {
-        if (items.length === 0 || checkoutState !== 'idle') return;
+        if (items.length === 0 || checkoutState !== 'idle' || !isClient) return;
 
         setCheckoutState('loading');
     
