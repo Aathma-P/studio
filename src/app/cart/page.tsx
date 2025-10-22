@@ -4,13 +4,14 @@
 import * as React from "react";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingCart, CreditCard } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, CreditCard, LoaderCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import type { ShoppingListItem, PurchaseRecord, PurchasedItem } from "@/lib/types";
+import type { ShoppingListItem, PurchaseRecord } from "@/lib/types";
 import { ALL_PRODUCTS } from "@/lib/data";
 import illust from "@/assets/images/illust.png";
+import { cn } from "@/lib/utils";
 
 const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -21,11 +22,14 @@ const formatPrice = (price: number) => {
 
 const TAX_RATE = 0.05;
 
+type CheckoutState = 'idle' | 'loading' | 'success';
+
 export default function CartPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { toast } = useToast();
     const [items, setItems] = React.useState<ShoppingListItem[]>([]);
+    const [checkoutState, setCheckoutState] = React.useState<CheckoutState>('idle');
     
 
     React.useEffect(() => {
@@ -91,36 +95,43 @@ export default function CartPage() {
     const grandTotal = subtotal + tax;
 
     const handleCheckout = () => {
-        if (items.length === 0) return;
-    
-        const newPurchase: PurchaseRecord = {
-          date: new Date().toISOString(),
-          items: items.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            totalPrice: item.price * item.quantity,
-          })),
-          total: grandTotal,
-        };
-    
-        try {
-          const storedPurchasesRaw = localStorage.getItem('previousPurchases');
-          const storedPurchases: PurchaseRecord[] = storedPurchasesRaw ? JSON.parse(storedPurchasesRaw) : [];
-          const updatedPurchases = [newPurchase, ...storedPurchases];
-          localStorage.setItem('previousPurchases', JSON.stringify(updatedPurchases));
-        } catch (e) {
-          console.error("Failed to save purchase to localStorage", e);
-        }
+        if (items.length === 0 || checkoutState !== 'idle') return;
 
-        toast({
-            description: "You can view your previous purchases in your profile.",
-            className: "bg-green-100 border-green-300 text-green-800 font-medium",
-            duration: 3000,
-        });
-
+        setCheckoutState('loading');
+    
         setTimeout(() => {
-            router.push("/home?refresh=true");
-        }, 1000);
+            const newPurchase: PurchaseRecord = {
+              date: new Date().toISOString(),
+              items: items.map(item => ({
+                name: item.name,
+                quantity: item.quantity,
+                totalPrice: item.price * item.quantity,
+              })),
+              total: grandTotal,
+            };
+        
+            try {
+              const storedPurchasesRaw = localStorage.getItem('previousPurchases');
+              const storedPurchases: PurchaseRecord[] = storedPurchasesRaw ? JSON.parse(storedPurchasesRaw) : [];
+              const updatedPurchases = [newPurchase, ...storedPurchases];
+              localStorage.setItem('previousPurchases', JSON.stringify(updatedPurchases));
+            } catch (e) {
+              console.error("Failed to save purchase to localStorage", e);
+            }
+    
+            toast({
+                description: "You can view your previous purchases in your profile.",
+                className: "bg-green-100 border-green-300 text-green-800 font-medium",
+                duration: 3000,
+            });
+
+            setCheckoutState('success');
+
+            setTimeout(() => {
+                router.push("/home?refresh=true");
+            }, 2000); // Wait 2 seconds on success before redirecting
+
+        }, 1000); // Simulate network delay
     };
 
     return (
@@ -215,6 +226,7 @@ export default function CartPage() {
                         variant="outline"
                         className="w-1/2 border-2 border-green-600 text-green-700 font-medium hover:bg-green-50 transition"
                         onClick={() => router.push('/home')}
+                        disabled={checkoutState !== 'idle'}
                         >
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Home
@@ -222,11 +234,16 @@ export default function CartPage() {
 
                         <Button
                         onClick={handleCheckout}
-                        disabled={items.length === 0}
-                        className="w-1/2 bg-green-600 hover:bg-green-700 text-white font-semibold transition"
+                        disabled={items.length === 0 || checkoutState !== 'idle'}
+                        className={cn(
+                            "w-1/2 font-semibold transition-all duration-300",
+                            checkoutState === 'success' ? 'bg-blue-500 hover:bg-blue-600 animate-pulse' : 'bg-green-600 hover:bg-green-700',
+                            'text-white'
+                        )}
                         >
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Checkout
+                        {checkoutState === 'idle' && <> <CreditCard className="mr-2 h-4 w-4" /> Checkout </>}
+                        {checkoutState === 'loading' && <> <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> Processing... </>}
+                        {checkoutState === 'success' && <> <CheckCircle className="mr-2 h-4 w-4" /> Success! </>}
                         </Button>
                     </div>
                 </footer>
@@ -234,4 +251,3 @@ export default function CartPage() {
         </div>
     );
 }
-    
