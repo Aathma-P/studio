@@ -113,7 +113,6 @@ export default function CartPage() {
         }
 
         toast({
-            title: "🎉 Order placed successfully!",
             description: "You can view your previous purchases in your profile.",
             className: "bg-green-100 border-green-300 text-green-800 font-medium",
             duration: 3000,
@@ -235,3 +234,4 @@ export default function CartPage() {
         </div>
     );
 }
+    
