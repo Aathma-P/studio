@@ -155,7 +155,7 @@ export default function CartPage() {
                         <div className="space-y-4">
                             {items.map(item => {
                                 const ItemIcon = item.icon;
-                                const isImage = typeof ItemIcon === 'object';
+                                const isImage = typeof ItemIcon === 'object' && ItemIcon !== null && 'src' in ItemIcon;
                                 return (
                                     <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4 flex items-start justify-between hover:shadow-md transition-all duration-200">
                                         <div className="flex items-center gap-4">

@@ -60,7 +60,7 @@ const ProductCard = ({
     colorClass: string,
 }) => {
     const Icon = product.icon;
-    const isImage = typeof Icon === 'object';
+    const isImage = typeof Icon === 'object' && Icon !== null && 'src' in Icon;
 
     return (
         <div className="flex items-center justify-between rounded-lg bg-muted p-3">
