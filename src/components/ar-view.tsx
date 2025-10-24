@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, ArrowRight } from "lucide-react";
+import { ArrowUp, CornerUpLeft, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, ArrowRight } from "lucide-react";
 import type { ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -93,6 +93,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   React.useEffect(() => {
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error("Media Devices API not available.");
         setHasCameraPermission(false);
         return;
       }
@@ -250,20 +251,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
           </div>
       )
   }
-
-  if (hasCameraPermission === false) {
-    return (
-        <div className="w-full h-full flex items-center justify-center bg-black p-4">
-            <Alert variant="destructive" className="max-w-sm">
-                <CameraOff className="h-4 w-4" />
-                <AlertTitle>Camera Access Required</AlertTitle>
-                <AlertDescription>
-                  Please enable camera permissions in your browser settings to use the AR view.
-                </AlertDescription>
-            </Alert>
-        </div>
-    );
-  }
   
   if (items.length === 0) {
     return (
@@ -300,6 +287,18 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       <div className="relative w-full flex-1" onClick={handleUserTap}>
         <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
         <canvas ref={canvasRef} className="hidden" />
+
+        {hasCameraPermission === false && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-4">
+                <Alert variant="destructive" className="max-w-sm">
+                    <CameraOff className="h-4 w-4" />
+                    <AlertTitle>Camera Access Required</AlertTitle>
+                    <AlertDescription>
+                    Please enable camera permissions in your browser settings to use the AR view.
+                    </AlertDescription>
+                </Alert>
+            </div>
+        )}
         
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/30 pointer-events-none" />
         
@@ -325,7 +324,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             {isScanning && !scanResult && itemToScan && (
               <div className="flex items-center gap-2 text-white bg-black/50 backdrop-blur-md p-2 rounded-lg">
                 <LoaderCircle className="w-5 h-5 animate-spin" />
-                <span>Scanning...</span>
+                <span>Scanning for {itemToScan.name}...</span>
               </div>
             )}
             {scanResult && (
@@ -337,24 +336,24 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       </div>
 
       {/* Bottom half: Map and Controls */}
-      <div className="w-full h-[45%] bg-white flex flex-col">
-        <div className="flex-1 overflow-hidden">
+      <div className="w-full bg-white flex flex-col flex-shrink-0" style={{ height: '45%' }}>
+        <div className="flex-1 relative overflow-hidden">
             <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
         </div>
 
         {currentItem && (
-          <div className="bg-white shadow-2xl p-4 border-t">
+          <div className="bg-white shadow-inner p-4 border-t">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold text-gray-800">{currentItem.name}</p>
-                <p className="text-sm text-gray-500">End of Aisle {currentItem.location.aisle}</p>
+                <p className="text-sm text-gray-500">Aisle {currentItem.location.aisle}, Section {currentItem.location.section}</p>
               </div>
               <Button
                 onClick={handleScan}
                 disabled={isScanning || currentInstruction.type !== 'scan'}
                 className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg px-6 py-2"
               >
-                {isScanning ? <LoaderCircle className="w-5 h-5 animate-spin"/> : "Got it"}
+                {isScanning ? <LoaderCircle className="w-5 h-5 animate-spin"/> : (currentInstruction.type === 'scan' ? "Scan Item" : "Next")}
               </Button>
             </div>
           </div>
@@ -379,3 +378,5 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
