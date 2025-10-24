@@ -154,28 +154,28 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             const nextIndex = prev + 1;
             const prevInstruction = arInstructions[prev];
 
-            if (prevInstruction.type === 'scan' || prevInstruction.type === 'turn-left' || prevInstruction.type === 'turn-right') {
-                const currentItemIndex = sortedItems.findIndex(it => it.id === (prevInstruction.itemId || currentItem?.id));
-                const isLastItem = currentItemIndex === sortedItems.length - 1;
-                
-                if (!isLastItem && currentItemIndex !== -1) {
-                    setCurrentItem(sortedItems[currentItemIndex + 1]);
-                } else {
-                    setCurrentItem(null); 
-                }
+            // Logic to update the currentItem based on the *next* scan instruction
+            if (prevInstruction.type === 'scan') {
+                const currentItemIndex = sortedItems.findIndex(it => it.id === prevInstruction.itemId);
+                const nextItem = sortedItems[currentItemIndex + 1];
+                setCurrentItem(nextItem || null); // Set to next item or null if it's the last one
             } else {
-                 const nextInstruction = arInstructions[nextIndex];
-                 if (nextInstruction.type === 'scan') {
-                    const item = sortedItems.find(it => it.id === nextInstruction.itemId);
+                // For non-scan instructions, find the next upcoming scan instruction
+                 const nextScanInstruction = arInstructions.slice(nextIndex).find(inst => inst.type === 'scan');
+                 if (nextScanInstruction) {
+                    const item = sortedItems.find(it => it.id === nextScanInstruction.itemId);
                     if (item) setCurrentItem(item);
-                }
+                 } else {
+                    // No more items to scan, heading to checkout
+                    setCurrentItem(null);
+                 }
             }
-
             return nextIndex;
         }
         return prev;
     });
-  }, [arInstructions, sortedItems, currentItem]);
+  }, [arInstructions, sortedItems]);
+
 
   const handleSkip = () => {
     if (isScanning || !itemToScan) return;
@@ -183,7 +183,20 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       title: `Skipped ${itemToScan.name}`,
       description: "Moving to the next item on your list.",
     });
-    goToNextInstruction();
+    // We need to advance multiple steps: past the current 'turn' and 'scan' instructions for the skipped item.
+    // The easiest way to do this is find the next instruction that is NOT related to the current item.
+    
+    let nextIndex = instructionIndex + 1;
+    while(nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === itemToScan.id) {
+        nextIndex++;
+    }
+
+    // Now find the next item in the sorted list
+    const currentItemIndex = sortedItems.findIndex(it => it.id === itemToScan.id);
+    const nextItem = sortedItems[currentItemIndex + 1];
+    setCurrentItem(nextItem || null);
+
+    setInstructionIndex(nextIndex);
   };
 
 
@@ -405,3 +418,5 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
