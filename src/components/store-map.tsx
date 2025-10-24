@@ -39,10 +39,12 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
         const mapGridWidth = STORE_LAYOUT[0].length;
         const mapGridHeight = STORE_LAYOUT.length;
         
+        if (availableWidth <= 0 || availableHeight <= 0) return;
+
         const newCellSizeByWidth = availableWidth / mapGridWidth;
         const newCellSizeByHeight = availableHeight / mapGridHeight;
         
-        setCellSize(Math.min(newCellSizeByWidth, newCellSizeByHeight, INITIAL_CELL_SIZE));
+        setCellSize(Math.min(newCellSizeByWidth, newCellSizeByHeight));
     };
 
     updateCellSize();
