@@ -179,7 +179,7 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
             return (
               <div
                 key={section.name}
-                className="absolute flex flex-col items-center justify-center text-neutral-500"
+                className="absolute flex flex-col items-center justify-center text-neutral-500 z-0"
                 style={{
                   left: section.position.x * cellSize,
                   top: section.position.y * cellSize,
@@ -203,17 +203,17 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
           {sortedItems.map((item, index) => {
               const aisleX = getAisleShelfX(item.location.aisle);
               const itemY = item.location.section;
-              const iconSize = Math.max(16, cellSize * 0.6);
+              const iconSize = Math.max(16, cellSize * 0.7);
               return (
                 <div 
                     key={item.id}
-                    className="absolute flex items-center justify-center bg-primary rounded-full text-primary-foreground text-xs font-bold z-10"
+                    className="absolute flex items-center justify-center bg-primary/90 border-2 border-white/80 rounded-full text-primary-foreground text-xs font-bold z-20 shadow-md"
                     style={{
                         left: aisleX * cellSize + (cellSize - iconSize) / 2,
                         top: itemY * cellSize + (cellSize - iconSize) / 2,
                         width: iconSize,
                         height: iconSize,
-                        fontSize: Math.max(8, cellSize * 0.3)
+                        fontSize: Math.max(8, cellSize * 0.35)
                     }}
                     title={item.name}
                 >
@@ -223,7 +223,7 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
           })}
           {/* Render path */}
           {pathPoints.length > 0 && (
-            <svg className="absolute top-0 left-0 w-full h-full" style={{ pointerEvents: 'none' }}>
+            <svg className="absolute top-0 left-0 w-full h-full z-10" style={{ pointerEvents: 'none' }}>
                 <polyline
                 points={pathPoints.map(p => `${p.x * cellSize + cellSize / 2},${p.y * cellSize + cellSize / 2}`).join(' ')}
                 fill="none"
@@ -238,7 +238,7 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
            {/* Render simulated user position */}
            {simulatedUserPosition && (
             <div
-              className="absolute z-20 flex items-center justify-center transition-all duration-300 ease-linear"
+              className="absolute z-30 flex items-center justify-center transition-all duration-300 ease-linear"
               style={{
                 left: simulatedUserPosition.x * cellSize + (cellSize - userIconSize) / 2,
                 top: simulatedUserPosition.y * cellSize + (cellSize - userIconSize) / 2,
