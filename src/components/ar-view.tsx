@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight } from "lucide-react";
+import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, Forward } from "lucide-react";
 import type { ShoppingListItem, MapPoint } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,9 @@ import { useIsMobile, useOrientation } from "@/hooks/use-mobile";
 import StoreMap from "./store-map";
 import { findPath } from "@/lib/pathfinding";
 import { ENTRANCE_POS } from "@/lib/data";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import { Mesh } from "three";
 
 
 interface ArViewProps {
@@ -31,6 +34,42 @@ const instructionIcons = {
     "scan": ScanLine,
     "finish": ShoppingBasket,
 };
+
+function Arrow3D({ instructionType }: { instructionType: Instruction['type'] }) {
+    const meshRef = useRef<Mesh>(null!);
+    
+    let rotationY = 0;
+    switch(instructionType) {
+        case 'left':
+        case 'turn-left':
+            rotationY = -Math.PI / 2;
+            break;
+        case 'right':
+        case 'turn-right':
+            rotationY = Math.PI / 2;
+            break;
+        default:
+            rotationY = 0;
+    }
+
+    useFrame((state, delta) => {
+      if(meshRef.current) {
+        meshRef.current.rotation.y = rotationY;
+        // Bobbing animation
+        meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      }
+    });
+  
+    return (
+      <mesh
+        ref={meshRef}
+        scale={1.5}
+        rotation={[0, rotationY, 0]}>
+        <coneGeometry args={[0.5, 1, 4]} />
+        <meshStandardMaterial color={'#16a34a'} />
+      </mesh>
+    )
+  }
 
 
 export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
@@ -102,9 +141,12 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        setHasCameraPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          // Ensure the video is ready before setting permission to true
+          videoRef.current.onloadedmetadata = () => {
+            setHasCameraPermission(true);
+          };
         }
       } catch (error) {
         console.error("Error accessing camera:", error);
@@ -217,7 +259,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
              setTimeout(() => {
                 setIsScanning(false);
                 setScanResult(null);
-            }, 2000);
+            }, 3000);
         }
 
     } catch (error) {
@@ -304,17 +346,28 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     )
   }
 
-  const Icon = instructionIcons[currentInstruction.type as keyof typeof instructionIcons] || ArrowUp;
-
   return (
     <div className="relative w-full h-full bg-black overflow-hidden" onClick={handleUserTap}>
-        <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-        <canvas ref={canvasRef} className="hidden" />
+      <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+      <canvas ref={canvasRef} className="hidden" />
       
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
+      {/* 3D Canvas */}
+      {hasCameraPermission && currentInstruction && currentInstruction.type !== 'scan' && (
+        <div className="absolute inset-0 z-10 pointer-events-none">
+            <Canvas>
+                <ambientLight intensity={0.5} />
+                <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+                <pointLight position={[-10, -10, -10]} />
+                <Arrow3D instructionType={currentInstruction.type} />
+            </Canvas>
+        </div>
+      )}
+
+      {/* Overlay UI */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70 pointer-events-none" />
 
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-6 text-white z-10">
+      <div className="absolute top-0 left-0 right-0 p-6 text-white z-20">
         <div className="flex items-center justify-between">
             <div>
                 <p className="text-sm text-neutral-300">Next item:</p>
@@ -328,7 +381,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       </div>
       
        {/* Scanning UI */}
-       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-full px-8">
+       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-full px-8 pointer-events-auto">
         {isScanning && !scanResult && itemToScan && (
           <div className="flex flex-col items-center justify-center text-white bg-black/50 backdrop-blur-md p-6 rounded-xl">
             <LoaderCircle className="w-12 h-12 animate-spin mb-4" />
@@ -346,9 +399,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       </div>
 
       {/* Main Instruction UI */}
-      <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center text-white z-10">
+      <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center text-white z-20">
         {currentInstruction.type === 'scan' && itemToScan ? (
-             <div className="flex flex-col items-center animate-fade-in">
+             <div className="flex flex-col items-center animate-fade-in pointer-events-auto">
                  <p className="text-2xl font-bold drop-shadow-lg mb-4">{currentInstruction.text}</p>
                 <Button size="lg" className="rounded-full h-20 w-20 p-0" onClick={handleScan} disabled={isScanning || !hasCameraPermission}>
                     {isScanning ? <LoaderCircle className="w-8 h-8 animate-spin"/> : <ScanLine className="w-8 h-8"/>}
@@ -360,9 +413,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
                 key={instructionIndex}
                 className="flex flex-col items-center animate-fade-in"
                 >
-                <Icon
-                    className="w-24 h-24 mb-4 drop-shadow-lg"
-                />
                 <h2 className="text-3xl font-bold drop-shadow-lg">
                     {currentInstruction.text}
                 </h2>
