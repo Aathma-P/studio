@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, Forward } from "lucide-react";
+import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight } from "lucide-react";
 import type { ShoppingListItem, MapPoint } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,6 @@ import { useIsMobile, useOrientation } from "@/hooks/use-mobile";
 import StoreMap from "./store-map";
 import { findPath } from "@/lib/pathfinding";
 import { ENTRANCE_POS } from "@/lib/data";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import { Mesh } from "three";
-
 
 interface ArViewProps {
   items: ShoppingListItem[];
@@ -34,42 +30,6 @@ const instructionIcons = {
     "scan": ScanLine,
     "finish": ShoppingBasket,
 };
-
-function Arrow3D({ instructionType }: { instructionType: Instruction['type'] }) {
-    const meshRef = useRef<Mesh>(null!);
-    
-    let rotationY = 0;
-    switch(instructionType) {
-        case 'left':
-        case 'turn-left':
-            rotationY = -Math.PI / 2;
-            break;
-        case 'right':
-        case 'turn-right':
-            rotationY = Math.PI / 2;
-            break;
-        default:
-            rotationY = 0;
-    }
-
-    useFrame((state, delta) => {
-      if(meshRef.current) {
-        meshRef.current.rotation.y = rotationY;
-        // Bobbing animation
-        meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.1;
-      }
-    });
-  
-    return (
-      <mesh
-        ref={meshRef}
-        scale={1.5}
-        rotation={[0, rotationY, 0]}>
-        <coneGeometry args={[0.5, 1, 4]} />
-        <meshStandardMaterial color={'#16a34a'} />
-      </mesh>
-    )
-  }
 
 
 export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
@@ -346,23 +306,13 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     )
   }
 
+  const InstructionIcon = instructionIcons[currentInstruction.type] || ArrowUp;
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden" onClick={handleUserTap}>
       <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
       <canvas ref={canvasRef} className="hidden" />
       
-      {/* 3D Canvas */}
-      {hasCameraPermission && currentInstruction && currentInstruction.type !== 'scan' && (
-        <div className="absolute inset-0 z-10 pointer-events-none">
-            <Canvas>
-                <ambientLight intensity={0.5} />
-                <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-                <pointLight position={[-10, -10, -10]} />
-                <Arrow3D instructionType={currentInstruction.type} />
-            </Canvas>
-        </div>
-      )}
-
       {/* Overlay UI */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70 pointer-events-none" />
 
@@ -413,6 +363,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
                 key={instructionIndex}
                 className="flex flex-col items-center animate-fade-in"
                 >
+                <InstructionIcon className="w-20 h-20 mb-4 drop-shadow-lg" />
                 <h2 className="text-3xl font-bold drop-shadow-lg">
                     {currentInstruction.text}
                 </h2>
@@ -438,5 +389,3 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
-
-    
