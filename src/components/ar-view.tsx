@@ -13,6 +13,7 @@ import { getTurnByTurnInstructions, Instruction } from "@/lib/pathfinding";
 import StoreMap from "./store-map";
 import { findPath } from "@/lib/pathfinding";
 import { ENTRANCE_POS } from "@/lib/data";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface ArViewProps {
   items: ShoppingListItem[];
@@ -293,7 +294,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   return (
     <div className="w-full h-full flex flex-col bg-black overflow-hidden">
       {/* Top half: Camera view */}
-      <div className="relative w-full flex-1" onClick={handleUserTap}>
+      <div className="relative w-full h-1/2" onClick={handleUserTap}>
         <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
         <canvas ref={canvasRef} className="hidden" />
 
@@ -345,41 +346,45 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       </div>
 
       {/* Bottom half: Map and Controls */}
-      <div className="w-full bg-white flex flex-col flex-shrink-0" style={{ height: '45%' }}>
-        <div className="flex-1 relative overflow-hidden">
-            <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
-        </div>
+      <div className="w-full bg-white flex flex-col flex-shrink-0 h-1/2">
+        <ScrollArea className="flex-1">
+            <div className="flex flex-col h-full">
+                <div className="relative flex-1 min-h-[250px]">
+                    <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
+                </div>
 
-        {currentItem && (
-          <div className="bg-white shadow-inner p-4 border-t">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="font-bold text-gray-800">{currentItem.name}</p>
-                <p className="text-sm text-gray-500">Aisle {currentItem.location.aisle}, Section {currentItem.location.section}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {currentInstruction.type === 'scan' && (
-                    <Button
-                        onClick={handleSkip}
-                        disabled={isScanning}
-                        variant="outline"
-                        className="font-semibold rounded-lg px-4 py-2"
-                    >
-                        <SkipForward className="mr-2 h-4 w-4" />
-                        Skip
-                    </Button>
+                {currentItem && (
+                <div className="bg-white shadow-inner p-4 border-t flex-shrink-0">
+                    <div className="flex items-center justify-between gap-2">
+                    <div>
+                        <p className="font-bold text-gray-800">{currentItem.name}</p>
+                        <p className="text-sm text-gray-500">Aisle {currentItem.location.aisle}, Section {currentItem.location.section}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {currentInstruction.type === 'scan' && (
+                            <Button
+                                onClick={handleSkip}
+                                disabled={isScanning}
+                                variant="outline"
+                                className="font-semibold rounded-lg px-4 py-2"
+                            >
+                                <SkipForward className="mr-2 h-4 w-4" />
+                                Skip
+                            </Button>
+                        )}
+                        <Button
+                            onClick={currentInstruction.type === 'scan' ? handleScan : goToNextInstruction}
+                            disabled={isScanning}
+                            className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg px-6 py-2"
+                        >
+                            {isScanning ? <LoaderCircle className="w-5 h-5 animate-spin"/> : (currentInstruction.type === 'scan' ? "Scan Item" : "Next")}
+                        </Button>
+                    </div>
+                    </div>
+                </div>
                 )}
-                <Button
-                    onClick={currentInstruction.type === 'scan' ? handleScan : goToNextInstruction}
-                    disabled={isScanning}
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg px-6 py-2"
-                >
-                    {isScanning ? <LoaderCircle className="w-5 h-5 animate-spin"/> : (currentInstruction.type === 'scan' ? "Scan Item" : "Next")}
-                </Button>
-              </div>
             </div>
-          </div>
-        )}
+        </ScrollArea>
       </div>
 
       <style jsx>{`
