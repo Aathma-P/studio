@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CornerUpLeft, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, ArrowRight } from "lucide-react";
+import { ArrowUp, CornerUpLeft, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, ArrowRight, SkipForward } from "lucide-react";
 import type { ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -153,8 +153,8 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             const nextIndex = prev + 1;
             const prevInstruction = arInstructions[prev];
 
-            if (prevInstruction.type === 'scan') {
-                const currentItemIndex = sortedItems.findIndex(it => it.id === prevInstruction.itemId);
+            if (prevInstruction.type === 'scan' || prevInstruction.type === 'turn-left' || prevInstruction.type === 'turn-right') {
+                const currentItemIndex = sortedItems.findIndex(it => it.id === (prevInstruction.itemId || currentItem?.id));
                 const isLastItem = currentItemIndex === sortedItems.length - 1;
                 
                 if (!isLastItem && currentItemIndex !== -1) {
@@ -174,7 +174,16 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         }
         return prev;
     });
-  }, [arInstructions, sortedItems]);
+  }, [arInstructions, sortedItems, currentItem]);
+
+  const handleSkip = () => {
+    if (isScanning || !itemToScan) return;
+    toast({
+      title: `Skipped ${itemToScan.name}`,
+      description: "Moving to the next item on your list.",
+    });
+    goToNextInstruction();
+  };
 
 
   const handleScan = async () => {
@@ -343,18 +352,31 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
         {currentItem && (
           <div className="bg-white shadow-inner p-4 border-t">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="font-bold text-gray-800">{currentItem.name}</p>
                 <p className="text-sm text-gray-500">Aisle {currentItem.location.aisle}, Section {currentItem.location.section}</p>
               </div>
-              <Button
-                onClick={handleScan}
-                disabled={isScanning || currentInstruction.type !== 'scan'}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg px-6 py-2"
-              >
-                {isScanning ? <LoaderCircle className="w-5 h-5 animate-spin"/> : (currentInstruction.type === 'scan' ? "Scan Item" : "Next")}
-              </Button>
+              <div className="flex items-center gap-2">
+                {currentInstruction.type === 'scan' && (
+                    <Button
+                        onClick={handleSkip}
+                        disabled={isScanning}
+                        variant="outline"
+                        className="font-semibold rounded-lg px-4 py-2"
+                    >
+                        <SkipForward className="mr-2 h-4 w-4" />
+                        Skip
+                    </Button>
+                )}
+                <Button
+                    onClick={currentInstruction.type === 'scan' ? handleScan : goToNextInstruction}
+                    disabled={isScanning}
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg px-6 py-2"
+                >
+                    {isScanning ? <LoaderCircle className="w-5 h-5 animate-spin"/> : (currentInstruction.type === 'scan' ? "Scan Item" : "Next")}
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -378,5 +400,3 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
-
-    
