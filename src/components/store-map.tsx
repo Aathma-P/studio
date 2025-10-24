@@ -27,24 +27,27 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
     const mapContainer = mapContainerRef.current;
     if (!mapContainer) return;
 
-    const resizeObserver = new ResizeObserver(() => {
-      const containerWidth = mapContainer.offsetWidth;
-      const containerHeight = mapContainer.offsetHeight;
-      const containerPaddingX = parseFloat(getComputedStyle(mapContainer).paddingLeft) + parseFloat(getComputedStyle(mapContainer).paddingRight);
-      const containerPaddingY = parseFloat(getComputedStyle(mapContainer).paddingTop) + parseFloat(getComputedStyle(mapContainer).paddingBottom);
-      
-      const availableWidth = containerWidth - containerPaddingX;
-      const availableHeight = containerHeight - containerPaddingY;
+    const updateCellSize = () => {
+        const containerWidth = mapContainer.offsetWidth;
+        const containerHeight = mapContainer.offsetHeight;
+        const containerPaddingX = parseFloat(getComputedStyle(mapContainer).paddingLeft) + parseFloat(getComputedStyle(mapContainer).paddingRight);
+        const containerPaddingY = parseFloat(getComputedStyle(mapContainer).paddingTop) + parseFloat(getComputedStyle(mapContainer).paddingBottom);
+        
+        const availableWidth = containerWidth - containerPaddingX;
+        const availableHeight = containerHeight - containerPaddingY;
 
-      const mapGridWidth = STORE_LAYOUT[0].length;
-      const mapGridHeight = STORE_LAYOUT.length;
-      
-      const newCellSizeByWidth = availableWidth / mapGridWidth;
-      const newCellSizeByHeight = availableHeight / mapGridHeight;
+        const mapGridWidth = STORE_LAYOUT[0].length;
+        const mapGridHeight = STORE_LAYOUT.length;
+        
+        const newCellSizeByWidth = availableWidth / mapGridWidth;
+        const newCellSizeByHeight = availableHeight / mapGridHeight;
+        
+        setCellSize(Math.min(newCellSizeByWidth, newCellSizeByHeight, INITIAL_CELL_SIZE));
+    };
 
-      setCellSize(Math.min(newCellSizeByWidth, newCellSizeByHeight, INITIAL_CELL_SIZE));
-    });
+    updateCellSize();
 
+    const resizeObserver = new ResizeObserver(updateCellSize);
     resizeObserver.observe(mapContainer);
 
     return () => resizeObserver.disconnect();

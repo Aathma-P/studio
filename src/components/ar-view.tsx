@@ -337,7 +337,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       </div>
 
       {/* Bottom half: Map view */}
-      <div className="relative w-full h-[45%] bg-white flex flex-col">
+      <div className="relative w-full h-[45%] bg-white flex flex-col overflow-hidden">
         <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
 
         {/* Item Card Overlay */}
