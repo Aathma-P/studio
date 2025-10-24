@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight } from "lucide-react";
+import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, ArrowRight } from "lucide-react";
 import type { ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { findItemInAisle, FindItemOutput } from "@/ai/flows/find-item-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getTurnByTurnInstructions, Instruction } from "@/lib/pathfinding";
-import { useIsMobile, useOrientation } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import StoreMap from "./store-map";
 import { findPath } from "@/lib/pathfinding";
 import { ENTRANCE_POS } from "@/lib/data";
@@ -24,7 +24,7 @@ const instructionIcons = {
     "start": ArrowUp,
     "straight": ArrowUp,
     "left": CornerUpLeft,
-    "right": CornerUpRight,
+    "right": ArrowRight,
     "turn-left": MoveLeft,
     "turn-right": MoveRight,
     "scan": ScanLine,
@@ -44,7 +44,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   
   const { toast } = useToast();
-  const orientation = useOrientation();
   const isMobile = useIsMobile();
 
   const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
@@ -239,7 +238,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     
     if (currentInstruction) {
         if (currentInstruction.type === 'scan') {
-            handleScan();
+            // "Got It" button now handles this
         } else {
             goToNextInstruction();
         }
@@ -292,79 +291,77 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     );
   }
 
-  if (isMobile && orientation === 'landscape') {
-    const currentPosition = currentInstruction?.pathPoint;
-    const currentItemIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
-    const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
-    
-    return (
-      <div className="w-full h-full bg-background">
-        <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
-      </div>
-    )
-  }
-
   const InstructionIcon = instructionIcons[currentInstruction.type] || ArrowUp;
+  const currentPosition = currentInstruction?.pathPoint;
+  const currentItemIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
+  const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden" onClick={handleUserTap}>
-      <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-      <canvas ref={canvasRef} className="hidden" />
-      
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70 pointer-events-none" />
-
-      <div className="absolute top-0 left-0 right-0 p-6 text-white z-20">
-        <div className="flex items-center justify-between">
-            <div>
-                <p className="text-sm text-neutral-300">Next item:</p>
-                <p className="text-xl font-bold">{currentItem?.name || "Checkout"}</p>
-            </div>
-             {currentItem && <div className="text-right">
-                <p className="text-sm text-neutral-300">Aisle:</p>
-                <p className="text-xl font-bold">{currentItem.location.aisle}</p>
-            </div>}
+    <div className="w-full h-full flex flex-col bg-black overflow-hidden">
+      {/* Top half: Camera view */}
+      <div className="relative w-full flex-1" onClick={handleUserTap}>
+        <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+        <canvas ref={canvasRef} className="hidden" />
+        
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/30 pointer-events-none" />
+        
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+            {currentInstruction.type !== 'scan' && (
+                <div
+                    key={instructionIndex}
+                    className="flex flex-col items-center animate-fade-in"
+                >
+                    <div className="bg-blue-500/80 backdrop-blur-sm rounded-full w-28 h-28 flex items-center justify-center shadow-lg">
+                        <InstructionIcon className="w-16 h-16 text-white drop-shadow-lg" />
+                    </div>
+                    <div className="mt-4 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
+                        <h2 className="text-lg font-bold">
+                            {currentInstruction.text}
+                        </h2>
+                    </div>
+                </div>
+            )}
+        </div>
+        
+         <div className="absolute top-4 right-4 z-20">
+            {isScanning && !scanResult && itemToScan && (
+              <div className="flex items-center gap-2 text-white bg-black/50 backdrop-blur-md p-2 rounded-lg">
+                <LoaderCircle className="w-5 h-5 animate-spin" />
+                <span>Scanning...</span>
+              </div>
+            )}
+            {scanResult && (
+                <div className={cn("p-2 rounded-lg text-sm text-white animate-fade-in backdrop-blur-md", scanResult.isFound ? "bg-primary/80" : "bg-destructive/80")}>
+                    {scanResult.isFound ? "Item Found!" : "Not Found"}
+                </div>
+            )}
         </div>
       </div>
-      
-       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-full px-8 pointer-events-auto">
-        {isScanning && !scanResult && itemToScan && (
-          <div className="flex flex-col items-center justify-center text-white bg-black/50 backdrop-blur-md p-6 rounded-xl">
-            <LoaderCircle className="w-12 h-12 animate-spin mb-4" />
-            <p className="text-lg font-bold">Scanning for {itemToScan.name}...</p>
-          </div>
-        )}
-        {scanResult && (
-            <div className={cn("p-6 rounded-xl text-center text-white animate-fade-in backdrop-blur-md", scanResult.isFound ? "bg-primary/80" : "bg-destructive/80")}>
-                <h3 className="text-2xl font-bold mb-2">
-                    {scanResult.isFound ? "Item Found!" : "Item Not Found"}
-                </h3>
-                <p className="text-lg">{scanResult.guidance}</p>
+
+      {/* Bottom half: Map view */}
+      <div className="relative w-full h-[45%] bg-white flex flex-col">
+        <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
+
+        {/* Item Card Overlay */}
+        {currentItem && (
+          <div className="absolute bottom-4 left-4 right-4 z-20">
+            <div className="bg-white rounded-2xl shadow-2xl p-4 flex items-center justify-between">
+              <div>
+                <p className="font-bold text-gray-800">{currentItem.name}</p>
+                <p className="text-sm text-gray-500">End of Aisle {currentItem.location.aisle}</p>
+              </div>
+              <Button
+                onClick={handleScan}
+                disabled={isScanning || currentInstruction.type !== 'scan'}
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg px-6 py-2"
+              >
+                {isScanning ? <LoaderCircle className="w-5 h-5 animate-spin"/> : "Got it"}
+              </Button>
             </div>
+          </div>
         )}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center text-white z-20">
-        {currentInstruction.type === 'scan' && itemToScan ? (
-             <div className="flex flex-col items-center animate-fade-in pointer-events-auto">
-                 <p className="text-2xl font-bold drop-shadow-lg mb-4">{currentInstruction.text}</p>
-                <Button size="lg" className="rounded-full h-20 w-20 p-0" onClick={handleScan} disabled={isScanning || !hasCameraPermission}>
-                    {isScanning ? <LoaderCircle className="w-8 h-8 animate-spin"/> : <ScanLine className="w-8 h-8"/>}
-                </Button>
-                <p className="mt-4 text-base text-neutral-300 drop-shadow-md">Tap button to scan</p>
-             </div>
-        ) : (
-             <div
-                key={instructionIndex}
-                className="flex flex-col items-center animate-fade-in"
-                >
-                <InstructionIcon className="w-20 h-20 mb-4 drop-shadow-lg" />
-                <h2 className="text-3xl font-bold drop-shadow-lg">
-                    {currentInstruction.text}
-                </h2>
-                 <p className="mt-2 text-base text-neutral-300 drop-shadow-md">Tap to continue</p>
-            </div>
-        )}
-      </div>
       <style jsx>{`
         .animate-fade-in {
           animation: fadeIn 0.5s ease-in-out;
@@ -372,16 +369,14 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: scale(0.9);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: scale(1);
           }
         }
       `}</style>
     </div>
   );
 }
-
-    
