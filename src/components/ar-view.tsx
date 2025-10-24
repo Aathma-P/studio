@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight } from "lucide-react";
-import type { ShoppingListItem, MapPoint } from "@/lib/types";
+import type { ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { findItemInAisle, FindItemOutput } from "@/ai/flows/find-item-flow";
@@ -101,12 +101,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        setHasCameraPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          // Ensure the video is ready before setting permission to true
-          videoRef.current.onloadedmetadata = () => {
-            setHasCameraPermission(true);
-          };
         }
       } catch (error) {
         console.error("Error accessing camera:", error);
@@ -249,7 +246,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     }
   }
 
-  if (hasCameraPermission === null || orientation === 'unknown') {
+  if (hasCameraPermission === null) {
       return (
           <div className="w-full h-full flex items-center justify-center bg-black">
               <LoaderCircle className="w-12 h-12 text-white animate-spin" />
@@ -261,10 +258,11 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     return (
         <div className="w-full h-full flex items-center justify-center bg-black p-4">
             <Alert variant="destructive" className="max-w-sm">
-              <AlertTitle>Camera Access Required</AlertTitle>
-              <AlertDescription>
-                Please enable camera permissions in your browser settings to use the AR view.
-              </AlertDescription>
+                <CameraOff className="h-4 w-4" />
+                <AlertTitle>Camera Access Required</AlertTitle>
+                <AlertDescription>
+                  Please enable camera permissions in your browser settings to use the AR view.
+                </AlertDescription>
             </Alert>
         </div>
     );
@@ -313,10 +311,8 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
       <canvas ref={canvasRef} className="hidden" />
       
-      {/* Overlay UI */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70 pointer-events-none" />
 
-      {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-6 text-white z-20">
         <div className="flex items-center justify-between">
             <div>
@@ -330,7 +326,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         </div>
       </div>
       
-       {/* Scanning UI */}
        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-full px-8 pointer-events-auto">
         {isScanning && !scanResult && itemToScan && (
           <div className="flex flex-col items-center justify-center text-white bg-black/50 backdrop-blur-md p-6 rounded-xl">
@@ -348,7 +343,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         )}
       </div>
 
-      {/* Main Instruction UI */}
       <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center justify-center text-center text-white z-20">
         {currentInstruction.type === 'scan' && itemToScan ? (
              <div className="flex flex-col items-center animate-fade-in pointer-events-auto">
@@ -389,3 +383,5 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
