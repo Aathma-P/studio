@@ -336,14 +336,15 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         </div>
       </div>
 
-      {/* Bottom half: Map view */}
-      <div className="relative w-full h-[45%] bg-white flex flex-col overflow-hidden">
-        <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
+      {/* Bottom half: Map and Controls */}
+      <div className="w-full h-[45%] bg-white flex flex-col">
+        <div className="flex-1 overflow-hidden">
+            <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
+        </div>
 
-        {/* Item Card Overlay */}
         {currentItem && (
-          <div className="absolute bottom-4 left-4 right-4 z-20">
-            <div className="bg-white rounded-2xl shadow-2xl p-4 flex items-center justify-between">
+          <div className="bg-white shadow-2xl p-4 border-t">
+            <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold text-gray-800">{currentItem.name}</p>
                 <p className="text-sm text-gray-500">End of Aisle {currentItem.location.aisle}</p>
