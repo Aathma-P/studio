@@ -5,7 +5,6 @@ import * as React from "react";
 import { ArrowUp, CornerUpLeft, CornerUpRight, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight } from "lucide-react";
 import type { ShoppingListItem, MapPoint } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { findItemInAisle, FindItemOutput } from "@/ai/flows/find-item-flow";
 import { useToast } from "@/hooks/use-toast";
@@ -37,7 +36,6 @@ const instructionIcons = {
 export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const [arInstructions, setArInstructions] = React.useState<Instruction[]>([]);
   const [instructionIndex, setInstructionIndex] = React.useState(0);
-  const [progress, setProgress] = React.useState(100);
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
@@ -111,6 +109,11 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       } catch (error) {
         console.error("Error accessing camera:", error);
         setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this feature.',
+        });
       }
     };
 
@@ -122,7 +125,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             stream.getTracks().forEach(track => track.stop());
         }
     }
-  }, []);
+  }, [toast]);
 
   
   React.useEffect(() => {
@@ -151,25 +154,23 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     setInstructionIndex(prev => {
         if (prev < arInstructions.length - 1) {
             const nextIndex = prev + 1;
-            const nextInstruction = arInstructions[nextIndex];
             const prevInstruction = arInstructions[prev];
 
-            // If we just finished a scan, figure out the *next* item to navigate to.
             if (prevInstruction.type === 'scan') {
                 const currentItemIndex = sortedItems.findIndex(it => it.id === prevInstruction.itemId);
                 const isLastItem = currentItemIndex === sortedItems.length - 1;
                 
                 if (!isLastItem && currentItemIndex !== -1) {
-                    // Set target to the next item in the sorted list
                     setCurrentItem(sortedItems[currentItemIndex + 1]);
                 } else {
-                    // This happens after the last item is scanned. The next target is the checkout.
                     setCurrentItem(null); 
                 }
-            } else if (nextInstruction.type === 'scan') {
-                // If the next instruction is a scan, update the current item to that item.
-                const item = sortedItems.find(it => it.id === nextInstruction.itemId);
-                if (item) setCurrentItem(item);
+            } else {
+                 const nextInstruction = arInstructions[nextIndex];
+                 if (nextInstruction.type === 'scan') {
+                    const item = sortedItems.find(it => it.id === nextInstruction.itemId);
+                    if (item) setCurrentItem(item);
+                }
             }
 
             return nextIndex;
@@ -178,40 +179,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     });
   }, [arInstructions, sortedItems]);
 
-  React.useEffect(() => {
-    if (!currentInstruction || isScanning || scanResult) return;
-  
-    if (currentInstruction.type === 'straight') {
-      const duration = (currentInstruction.distance || 1) * 300; 
-      const timer = setTimeout(() => {
-        goToNextInstruction();
-      }, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [currentInstruction, isScanning, scanResult, goToNextInstruction]);
-  
-  React.useEffect(() => {
-    setProgress(100);
-    if (!currentInstruction || currentInstruction.type !== 'straight' || isScanning) return;
-
-    const intervalTime = (currentInstruction.distance || 1) * 300;
-    
-    let start: number | null = null;
-    let animationFrameId: number;
-
-    const step = (timestamp: number) => {
-      if (!start) start = timestamp;
-      const elapsed = timestamp - start;
-      const newProgress = Math.max(0, 100 - (elapsed / intervalTime) * 100);
-      setProgress(newProgress);
-      if (newProgress > 0) {
-        animationFrameId = requestAnimationFrame(step);
-      }
-    };
-    animationFrameId = requestAnimationFrame(step);
-
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [instructionIndex, currentInstruction, isScanning]);
 
   const handleScan = async () => {
     if (!itemToScan || !videoRef.current || !canvasRef.current || !hasCameraPermission) return;
@@ -239,26 +206,29 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
         setScanResult(result);
         
-        setTimeout(() => {
-            if (result.isFound) {
-                onItemScannedAndFound(itemToScan.id);
-            }
-            goToNextInstruction();
-            setIsScanning(false);
-            setScanResult(null);
-        }, 3000);
+        if (result.isFound) {
+            onItemScannedAndFound(itemToScan.id);
+            setTimeout(() => {
+                goToNextInstruction();
+                setIsScanning(false);
+                setScanResult(null);
+            }, 2000);
+        } else {
+             setTimeout(() => {
+                setIsScanning(false);
+                setScanResult(null);
+            }, 2000);
+        }
 
     } catch (error) {
         console.error("AI scan failed:", error);
-        const errorMessage = error instanceof Error ? error.message : "Could not analyze the image.";
         toast({
             variant: "destructive",
             title: "Scan Failed",
-            description: "The AI scan failed. Please try again.",
+            description: "The AI scan could not be completed. Please try again.",
         });
         setScanResult({isFound: false, guidance: "Scan failed. Please align with the shelf and try again."})
         setTimeout(() => {
-            // Don't advance instruction on failure, let user retry
             setIsScanning(false);
             setScanResult(null);
         }, 3000);
@@ -269,10 +239,10 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     if (isScanning || scanResult) return;
     
     if (currentInstruction) {
-        if (['start', 'left', 'right', 'turn-left', 'turn-right', 'finish'].includes(currentInstruction.type)) {
-            goToNextInstruction();
-        } else if (currentInstruction.type === 'scan') {
+        if (currentInstruction.type === 'scan') {
             handleScan();
+        } else {
+            goToNextInstruction();
         }
     }
   }
@@ -289,7 +259,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     return (
         <div className="w-full h-full flex items-center justify-center bg-black p-4">
             <Alert variant="destructive" className="max-w-sm">
-              <CameraOff className="h-4 w-4" />
               <AlertTitle>Camera Access Required</AlertTitle>
               <AlertDescription>
                 Please enable camera permissions in your browser settings to use the AR view.
@@ -298,7 +267,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         </div>
     );
   }
-
+  
   if (items.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
@@ -346,11 +315,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-6 text-white z-10">
-         {currentInstruction.type === 'straight' && (
-            <div className="w-full bg-white/20 backdrop-blur-sm rounded-full h-1.5 mb-4">
-                <Progress value={progress} className="h-1.5 transition-transform duration-200 ease-linear" />
-            </div>
-         )}
         <div className="flex items-center justify-between">
             <div>
                 <p className="text-sm text-neutral-300">Next item:</p>
@@ -389,6 +353,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
                 <Button size="lg" className="rounded-full h-20 w-20 p-0" onClick={handleScan} disabled={isScanning || !hasCameraPermission}>
                     {isScanning ? <LoaderCircle className="w-8 h-8 animate-spin"/> : <ScanLine className="w-8 h-8"/>}
                 </Button>
+                <p className="mt-4 text-base text-neutral-300 drop-shadow-md">Tap button to scan</p>
              </div>
         ) : (
              <div
@@ -401,7 +366,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
                 <h2 className="text-3xl font-bold drop-shadow-lg">
                     {currentInstruction.text}
                 </h2>
-                 {['start', 'left', 'right', 'turn-left', 'turn-right'].includes(currentInstruction.type) && <p className="mt-2 text-base text-neutral-300 drop-shadow-md">Tap to continue</p>}
+                 <p className="mt-2 text-base text-neutral-300 drop-shadow-md">Tap to continue</p>
             </div>
         )}
       </div>
@@ -423,3 +388,5 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
