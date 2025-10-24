@@ -10,7 +10,6 @@ import { findItemInAisle, FindItemOutput } from "@/ai/flows/find-item-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getTurnByTurnInstructions, Instruction } from "@/lib/pathfinding";
-import { useIsMobile } from "@/hooks/use-mobile";
 import StoreMap from "./store-map";
 import { findPath } from "@/lib/pathfinding";
 import { ENTRANCE_POS } from "@/lib/data";
@@ -44,7 +43,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   
   const { toast } = useToast();
-  const isMobile = useIsMobile();
 
   const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
 
