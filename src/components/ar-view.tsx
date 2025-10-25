@@ -303,7 +303,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/30 pointer-events-none" />
         
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center scene">
+        <div className="absolute top-2/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center scene">
             {currentInstruction.type !== 'scan' && (
                 <div key={instructionIndex} className={cn("arrow-3d-container animate-fade-in", arrowDirection)}>
                     <div className="arrow-3d">
@@ -511,3 +511,5 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
