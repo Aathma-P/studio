@@ -291,7 +291,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
   return (
     <div className="w-full h-full flex flex-col bg-black overflow-hidden">
-      <div className="relative w-full h-1/2" onClick={handleUserTap}>
+      <div className="relative flex-1 w-full" onClick={handleUserTap}>
         <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
         <canvas ref={canvasRef} className="hidden" />
 
@@ -340,15 +340,15 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         </div>
       </div>
 
-      <div className="w-full bg-white flex flex-col flex-shrink-0 h-1/2">
+      <div className="w-full bg-white flex flex-col flex-shrink-0 h-2/5">
         <ScrollArea className="flex-1">
-            <div className="flex flex-col h-full">
-                <div className="relative flex-1 w-full max-h-[300px] aspect-w-1 aspect-h-1 mx-auto my-auto">
+            <div className="flex flex-col h-full p-4">
+                <div className="relative flex-1 w-full grid place-items-center">
                     <StoreMap items={itemsToMap} simulatedUserPosition={mapPosition} />
                 </div>
 
                 {currentItem && (
-                <div className="bg-white shadow-inner p-4 border-t flex-shrink-0">
+                <div className="bg-white shadow-inner pt-4 border-t flex-shrink-0">
                     <div className="flex items-center justify-between gap-2">
                     <div>
                         <p className="font-bold text-gray-800">{currentItem.name}</p>
@@ -394,7 +394,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
           width: 80px;
           height: 100px;
           perspective: 200px;
-          animation: float 2s ease-in-out infinite;
           transform-style: preserve-3d;
           transition: transform 0.4s ease-in-out;
         }
@@ -441,32 +440,31 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         }
         
         .arrow-container.arrow-left {
-            transform: rotateY(60deg);
+            transform: rotateY(-60deg);
         }
 
         .arrow-container.arrow-right {
-            transform: rotateY(-60deg);
+            transform: rotateY(60deg);
         }
         
         .arrow-container.arrow-straight {
             transform: rotateY(0deg);
         }
 
-        @keyframes float {
-            0% { transform: translateY(0px) rotateY(0); }
-            50% { transform: translateY(-20px) rotateY(0); }
-            100% { transform: translateY(0px) rotateY(0); }
+        .arrow-container {
+            animation-name: float-straight;
+            animation-duration: 2s;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
         }
-        
+
         .arrow-container.arrow-left {
           animation-name: float-left;
         }
         .arrow-container.arrow-right {
           animation-name: float-right;
         }
-        .arrow-container.arrow-straight {
-          animation-name: float-straight;
-        }
+        
 
         @keyframes float-straight {
             0% { transform: translateY(0) rotateY(0deg); }
@@ -474,18 +472,20 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             100% { transform: translateY(0) rotateY(0deg); }
         }
         @keyframes float-left {
-            0% { transform: translateY(0) rotateY(60deg); }
-            50% { transform: translateY(-20px) rotateY(60deg); }
-            100% { transform: translateY(0) rotateY(60deg); }
-        }
-        @keyframes float-right {
             0% { transform: translateY(0) rotateY(-60deg); }
             50% { transform: translateY(-20px) rotateY(-60deg); }
             100% { transform: translateY(0) rotateY(-60deg); }
+        }
+        @keyframes float-right {
+            0% { transform: translateY(0) rotateY(60deg); }
+            50% { transform: translateY(-20px) rotateY(60deg); }
+            100% { transform: translateY(0) rotateY(60deg); }
         }
       `}</style>
     </div>
   );
 }
+
+    
 
     

@@ -13,47 +13,15 @@ interface StoreMapProps {
   simulatedUserPosition?: MapPoint;
 }
 
-const INITIAL_CELL_SIZE = 40;
+const GRID_COLS = STORE_LAYOUT[0].length;
+const GRID_ROWS = STORE_LAYOUT.length;
 
 const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
 const getAisleShelfX = (aisle: number) => (aisle - 1) * 2 + 1;
 
 
 export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps) {
-  const mapContainerRef = React.useRef<HTMLDivElement>(null);
-  const [cellSize, setCellSize] = React.useState(INITIAL_CELL_SIZE);
-
-  React.useLayoutEffect(() => {
-    const mapContainer = mapContainerRef.current;
-    if (!mapContainer) return;
-
-    const updateCellSize = () => {
-        const style = getComputedStyle(mapContainer);
-        const containerPaddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-        const containerPaddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-
-        const availableWidth = mapContainer.clientWidth - containerPaddingX;
-        const availableHeight = mapContainer.clientHeight - containerPaddingY;
-        
-        const mapGridWidth = STORE_LAYOUT[0].length;
-        const mapGridHeight = STORE_LAYOUT.length;
-        
-        if (availableWidth <= 0 || availableHeight <= 0) return;
-
-        const newCellSizeByWidth = availableWidth / mapGridWidth;
-        const newCellSizeByHeight = availableHeight / mapGridHeight;
-        
-        setCellSize(Math.min(newCellSizeByWidth, newCellSizeByHeight));
-    };
-
-    updateCellSize();
-
-    const resizeObserver = new ResizeObserver(updateCellSize);
-    resizeObserver.observe(mapContainer);
-
-    return () => resizeObserver.disconnect();
-  }, []);
-
+  
   const sortedItems = React.useMemo(() => {
     if (items.length === 0) return [];
   
@@ -132,124 +100,114 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
     return fullPath;
   }, [sortedItems]);
 
-  const userIconSize = cellSize;
+  if (items.length === 0 && !simulatedUserPosition) {
+    return (
+      <div className="text-center">
+        <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h3 className="mt-4 text-lg font-medium">Map is ready</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Add items to your list to see the optimal route.</p>
+      </div>
+    );
+  }
 
   return (
-    <div ref={mapContainerRef} className="w-full h-full flex items-center justify-center bg-muted/20 p-4 overflow-hidden">
-      {items.length === 0 && !simulatedUserPosition ? (
-        <div className="text-center">
-          <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium">Map is ready</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Add items to your list to see the optimal route.</p>
-        </div>
-      ) : (
-        <div 
-          className="relative shrink-0"
+    <div 
+      className="relative grid bg-muted/20 max-w-full max-h-full"
+      style={{
+        gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
+        gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
+        aspectRatio: `${GRID_COLS} / ${GRID_ROWS}`
+      }}
+    >
+      {/* Render layout */}
+      {STORE_LAYOUT.map((row, y) => (
+        row.map((cell, x) => (
+          <div
+            key={`${y}-${x}`}
+            className={cn(
+              cell === 1 && "bg-neutral-300 dark:bg-neutral-700",
+              cell === 2 && "bg-green-500/20", // Entrance
+              cell === 3 && "bg-blue-500/20", // Checkout
+            )}
+            style={{
+              gridColumn: x + 1,
+              gridRow: y + 1,
+            }}
+          />
+        ))
+      ))}
+
+      {/* Render Map Sections */}
+      {MAP_SECTIONS.map((section) => {
+        const SectionIcon = section.icon;
+        return (
+          <div
+            key={section.name}
+            className="flex flex-col items-center justify-center text-neutral-500 z-0 text-[8px] md:text-[10px] lg:text-xs"
+            style={{
+              gridColumn: `${section.position.x + 1} / span ${section.size.width}`,
+              gridRow: `${section.position.y + 1} / span ${section.size.height}`,
+            }}
+            title={section.name}
+          >
+              <SectionIcon 
+                className={cn(section.color, 'opacity-80 h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5')}
+              />
+              <span className={cn("mt-1 font-semibold", section.color)}>{section.name}</span>
+          </div>
+        )
+      })}
+
+
+      {/* Render item locations */}
+      {sortedItems.map((item, index) => {
+          const aisleX = getAisleShelfX(item.location.aisle);
+          const itemY = item.location.section;
+          return (
+            <div 
+                key={item.id}
+                className="relative flex items-center justify-center bg-primary/90 border-2 border-white/80 rounded-full text-primary-foreground text-xs font-bold z-20 shadow-md p-1"
+                style={{
+                    gridColumn: aisleX + 1,
+                    gridRow: itemY + 1,
+                    aspectRatio: '1/1',
+                }}
+                title={item.name}
+            >
+                <span className="text-[8px] md:text-xs">{index + 1}</span>
+            </div>
+          )
+      })}
+
+      {/* Render path */}
+      {pathPoints.length > 0 && (
+        <svg className="absolute top-0 left-0 w-full h-full z-10" style={{ pointerEvents: 'none' }} 
+          viewBox={`0 0 ${GRID_COLS} ${GRID_ROWS}`} preserveAspectRatio="none">
+            <polyline
+            points={pathPoints.map(p => `${p.x + 0.5},${p.y + 0.5}`).join(' ')}
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="0.1"
+            strokeDasharray="0.2 0.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+            />
+        </svg>
+       )}
+
+       {/* Render simulated user position */}
+       {simulatedUserPosition && (
+        <div
+          className="relative z-30 flex items-center justify-center transition-all duration-300 ease-linear"
           style={{
-            width: STORE_LAYOUT[0].length * cellSize,
-            height: STORE_LAYOUT.length * cellSize,
+            gridColumn: Math.round(simulatedUserPosition.x) + 1,
+            gridRow: Math.round(simulatedUserPosition.y) + 1,
           }}
         >
-          {/* Render layout */}
-          {STORE_LAYOUT.map((row, y) => (
-            row.map((cell, x) => (
-              <div
-                key={`${y}-${x}`}
-                className={cn(
-                  "absolute",
-                  cell === 1 && "bg-neutral-300 dark:bg-neutral-700",
-                  cell === 2 && "bg-green-500/20", // Entrance
-                  cell === 3 && "bg-blue-500/20", // Checkout
-                )}
-                style={{
-                  left: x * cellSize,
-                  top: y * cellSize,
-                  width: cellSize,
-                  height: cellSize,
-                }}
-              />
-            ))
-          ))}
-
-          {/* Render Map Sections */}
-          {MAP_SECTIONS.map((section) => {
-            const SectionIcon = section.icon;
-            const iconSize = Math.max(16, cellSize * 0.6);
-            return (
-              <div
-                key={section.name}
-                className="absolute flex flex-col items-center justify-center text-neutral-500 z-0"
-                style={{
-                  left: section.position.x * cellSize,
-                  top: section.position.y * cellSize,
-                  width: cellSize * section.size.width,
-                  height: cellSize * section.size.height,
-                  fontSize: Math.max(8, cellSize * 0.3)
-                }}
-                title={section.name}
-              >
-                  <SectionIcon 
-                    className={cn(section.color, 'opacity-80')}
-                    style={{width: iconSize, height: iconSize}} 
-                  />
-                  <span className={cn("mt-1 font-semibold", section.color)}>{section.name}</span>
-              </div>
-            )
-          })}
-
-
-          {/* Render item locations */}
-          {sortedItems.map((item, index) => {
-              const aisleX = getAisleShelfX(item.location.aisle);
-              const itemY = item.location.section;
-              const iconSize = Math.max(16, cellSize * 0.7);
-              return (
-                <div 
-                    key={item.id}
-                    className="absolute flex items-center justify-center bg-primary/90 border-2 border-white/80 rounded-full text-primary-foreground text-xs font-bold z-20 shadow-md"
-                    style={{
-                        left: aisleX * cellSize + (cellSize - iconSize) / 2,
-                        top: itemY * cellSize + (cellSize - iconSize) / 2,
-                        width: iconSize,
-                        height: iconSize,
-                        fontSize: Math.max(8, cellSize * 0.35)
-                    }}
-                    title={item.name}
-                >
-                    {index + 1}
-                </div>
-              )
-          })}
-          {/* Render path */}
-          {pathPoints.length > 0 && (
-            <svg className="absolute top-0 left-0 w-full h-full z-10" style={{ pointerEvents: 'none' }}>
-                <polyline
-                points={pathPoints.map(p => `${p.x * cellSize + cellSize / 2},${p.y * cellSize + cellSize / 2}`).join(' ')}
-                fill="none"
-                stroke="hsl(var(--primary))"
-                strokeWidth="2"
-                strokeDasharray="4 4"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                />
-            </svg>
-           )}
-           {/* Render simulated user position */}
-           {simulatedUserPosition && (
-            <div
-              className="absolute z-30 flex items-center justify-center transition-all duration-300 ease-linear"
-              style={{
-                left: simulatedUserPosition.x * cellSize + (cellSize - userIconSize) / 2,
-                top: simulatedUserPosition.y * cellSize + (cellSize - userIconSize) / 2,
-                width: userIconSize,
-                height: userIconSize,
-              }}
-            >
-              <div className="w-3/5 h-3/5 rounded-full bg-blue-500 border-2 border-white shadow-lg" />
-            </div>
-           )}
+          <div className="w-3/5 h-3/5 rounded-full bg-blue-500 border-2 border-white shadow-lg" />
         </div>
-      )}
+       )}
     </div>
   );
 }
