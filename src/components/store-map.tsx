@@ -102,7 +102,7 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
 
   if (items.length === 0 && !simulatedUserPosition) {
     return (
-      <div className="text-center">
+      <div className="text-center p-4">
         <ShoppingBasket className="mx-auto h-12 w-12 text-muted-foreground" />
         <h3 className="mt-4 text-lg font-medium">Map is ready</h3>
         <p className="mt-1 text-sm text-muted-foreground">Add items to your list to see the optimal route.</p>
@@ -114,8 +114,8 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
     <div 
       className="relative grid bg-muted/20 max-w-full max-h-full"
       style={{
-        gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
-        gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
+        gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))`,
+        gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
         aspectRatio: `${GRID_COLS} / ${GRID_ROWS}`
       }}
     >
@@ -125,13 +125,14 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
           <div
             key={`${y}-${x}`}
             className={cn(
+              "w-full h-full",
               cell === 1 && "bg-neutral-300 dark:bg-neutral-700",
               cell === 2 && "bg-green-500/20", // Entrance
               cell === 3 && "bg-blue-500/20", // Checkout
             )}
             style={{
-              gridColumn: x + 1,
-              gridRow: y + 1,
+              gridColumnStart: x + 1,
+              gridRowStart: y + 1,
             }}
           />
         ))
@@ -166,11 +167,10 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
           return (
             <div 
                 key={item.id}
-                className="relative flex items-center justify-center bg-primary/90 border-2 border-white/80 rounded-full text-primary-foreground text-xs font-bold z-20 shadow-md p-1"
+                className="relative flex items-center justify-center bg-primary/90 border-2 border-white/80 rounded-full text-primary-foreground text-xs font-bold z-20 shadow-md p-1 aspect-square"
                 style={{
-                    gridColumn: aisleX + 1,
-                    gridRow: itemY + 1,
-                    aspectRatio: '1/1',
+                    gridColumnStart: aisleX + 1,
+                    gridRowStart: itemY + 1,
                 }}
                 title={item.name}
             >
@@ -201,8 +201,8 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
         <div
           className="relative z-30 flex items-center justify-center transition-all duration-300 ease-linear"
           style={{
-            gridColumn: Math.round(simulatedUserPosition.x) + 1,
-            gridRow: Math.round(simulatedUserPosition.y) + 1,
+            gridColumnStart: Math.round(simulatedUserPosition.x) + 1,
+            gridRowStart: Math.round(simulatedUserPosition.y) + 1,
           }}
         >
           <div className="w-3/5 h-3/5 rounded-full bg-blue-500 border-2 border-white shadow-lg" />
@@ -211,5 +211,3 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
     </div>
   );
 }
-
-    
