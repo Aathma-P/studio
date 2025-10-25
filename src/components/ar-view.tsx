@@ -342,7 +342,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       <div className="w-full bg-white flex flex-col flex-shrink-0 h-1/2">
         <ScrollArea className="flex-1">
             <div className="flex flex-col h-full">
-                <div className="relative flex-1 min-h-[250px]">
+                <div className="relative flex-1 w-full aspect-video max-h-[300px] mx-auto">
                     <StoreMap items={itemsToMap} simulatedUserPosition={mapPosition} />
                 </div>
 
@@ -459,5 +459,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
 
     
