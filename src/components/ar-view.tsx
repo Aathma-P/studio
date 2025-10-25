@@ -322,19 +322,16 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center scene">
             {currentInstruction.type !== 'scan' && (
-                <div key={instructionIndex} className={cn("arrow-container animate-fade-in", arrowDirection)}>
+                <div key={instructionIndex} className={cn("arrow-3d-container animate-fade-in", arrowDirection)}>
                     <div className="arrow-3d">
-                        <div className="arrow-face front"></div>
-                        <div className="arrow-face back"></div>
-                        <div className="arrow-face top"></div>
-                        <div className="arrow-face bottom"></div>
-                        <div className="arrow-face left"></div>
-                        <div className="arrow-face right"></div>
+                        <div className="arrow-chevron"></div>
+                        <div className="arrow-chevron"></div>
+                        <div className="arrow-chevron"></div>
                     </div>
                 </div>
             )}
              {currentInstruction.type !== 'scan' && (
-                <div className="mt-4 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
+                <div className="mt-24 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
                     <h2 className="text-lg font-bold">
                         {currentInstruction.text}
                     </h2>
@@ -414,130 +411,92 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         }
         
         .scene {
-            perspective: 400px;
-            width: 200px;
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .arrow-container {
-            width: 100px;
-            height: 100px;
-            animation: float 3s ease-in-out infinite;
+            perspective: 600px;
             transform-style: preserve-3d;
-            transition: transform 0.5s ease-in-out;
         }
 
-        .arrow-container.left {
-            transform: rotateY(-45deg);
+        .arrow-3d-container {
+            width: 120px;
+            height: 120px;
+            transform-style: preserve-3d;
+            animation: float 3s ease-in-out infinite;
+            transform: rotateX(50deg);
+            transition: transform 0.5s ease-out;
         }
         
-        .arrow-container.right {
-            transform: rotateY(45deg);
+        .arrow-3d-container.left {
+            transform: rotateX(50deg) rotateZ(-45deg);
         }
-        
-        .arrow-container.straight {
-            transform: rotateY(0deg);
+
+        .arrow-3d-container.right {
+            transform: rotateX(50deg) rotateZ(45deg);
+        }
+
+        @keyframes float {
+            0% { transform: rotateX(50deg) translateY(0); }
+            50% { transform: rotateX(50deg) translateY(-20px); }
+            100% { transform: rotateX(50deg) translateY(0); }
+        }
+
+        .arrow-3d-container.left {
+             animation-name: float-left;
+        }
+        @keyframes float-left {
+            0% { transform: rotateX(50deg) rotateZ(-45deg) translateY(0); }
+            50% { transform: rotateX(50deg) rotateZ(-45deg) translateY(-20px); }
+            100% { transform: rotateX(50deg) rotateZ(-45deg) translateY(0); }
+        }
+
+        .arrow-3d-container.right {
+             animation-name: float-right;
+        }
+        @keyframes float-right {
+            0% { transform: rotateX(50deg) rotateZ(45deg) translateY(0); }
+            50% { transform: rotateX(50deg) rotateZ(45deg) translateY(-20px); }
+            100% { transform: rotateX(50deg) rotateZ(45deg) translateY(0); }
         }
 
         .arrow-3d {
             width: 100%;
             height: 100%;
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             transform-style: preserve-3d;
-            transform: rotateX(-35deg) rotateY(0deg) translateZ(20px);
+            filter: drop-shadow(0 15px 5px rgba(0,0,0,0.3));
         }
 
-        .arrow-face {
-            position: absolute;
-            width: 100px;
-            height: 20px;
-            background: rgba(42, 199, 105, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 0 20px rgba(42, 199, 105, 0.8);
+        .arrow-chevron {
+            width: 60px;
+            height: 60px;
+            margin-top: -35px;
+            border-style: solid;
+            border-color: #2AC769;
+            border-width: 0 12px 12px 0;
+            transform: rotate(315deg);
+            background: linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
+            box-shadow: inset -5px 5px 15px rgba(0,0,0,0.1);
         }
 
-        .front {
-            transform: rotateY(0deg) translateZ(10px);
-            width: 0; 
-            height: 0; 
-            border-left: 50px solid transparent;
-            border-right: 50px solid transparent;
-            border-bottom: 80px solid rgba(42, 199, 105, 0.9);
-            background: transparent;
-            top: -30px;
+        .arrow-chevron:first-child {
+            animation: chevron-fade 1.5s infinite 0s;
+        }
+        .arrow-chevron:nth-child(2) {
+            animation: chevron-fade 1.5s infinite 0.2s;
+        }
+        .arrow-chevron:nth-child(3) {
+            animation: chevron-fade 1.5s infinite 0.4s;
         }
 
-        .back {
-            transform: rotateY(180deg) translateZ(10px);
-            width: 0; 
-            height: 0; 
-            border-left: 50px solid transparent;
-            border-right: 50px solid transparent;
-            border-bottom: 80px solid rgba(42, 199, 105, 0.7);
-            background: transparent;
-            top: -30px;
+        @keyframes chevron-fade {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
         }
-
-        .top {
-            height: 20px;
-            transform: rotateX(90deg) translateZ(40px) translateY(-50px) translateX(-50px) scaleY(0.2);
-            background: rgba(42, 199, 105, 0.9);
-        }
-
-        .bottom {
-             height: 20px;
-             width: 100px;
-             transform: rotateX(-90deg) translateZ(40px) translateY(50px) translateX(-50px);
-        }
-
-        .left {
-            width: 80px;
-            height: 20px;
-            transform: rotateY(-90deg) rotateX(51.5deg) translateZ(10px) translateY(15px) translateX(-40px);
-            background: rgba(42, 199, 105, 0.6);
-        }
-
-        .right {
-            width: 80px;
-            height: 20px;
-            transform: rotateY(90deg) rotateX(-51.5deg) translateZ(10px) translateY(15px) translateX(40px);
-            background: rgba(42, 199, 105, 0.7);
-        }
-        
-        @keyframes float {
-            0% { transform: translateY(0px) rotateY(0deg); }
-            50% { transform: translateY(-20px) rotateY(0deg); }
-            100% { transform: translateY(0px) rotateY(0deg); }
-        }
-        
-        .arrow-container.left {
-             animation-name: float-left;
-        }
-         @keyframes float-left {
-            0% { transform: translateY(0px) rotateY(-45deg); }
-            50% { transform: translateY(-20px) rotateY(-45deg); }
-            100% { transform: translateY(0px) rotateY(-45deg); }
-        }
-
-        .arrow-container.right {
-             animation-name: float-right;
-        }
-
-        @keyframes float-right {
-            0% { transform: translateY(0px) rotateY(45deg); }
-            50% { transform: translateY(-20px) rotateY(45deg); }
-            100% { transform: translateY(0px) rotateY(45deg); }
-        }
-
 
       `}</style>
     </div>
   );
 }
-
-    
 
     
