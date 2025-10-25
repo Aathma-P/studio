@@ -32,8 +32,8 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
         const containerPaddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
         const containerPaddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
 
-        const availableWidth = mapContainer.clientWidth - containerPaddingX;
-        const availableHeight = mapContainer.clientHeight - containerPaddingY;
+        const availableWidth = (mapContainer.clientWidth - containerPaddingX) * 0.95; // Use 95% of width
+        const availableHeight = (mapContainer.clientHeight - containerPaddingY) * 0.95; // Use 95% of height
         
         const mapGridWidth = STORE_LAYOUT[0].length;
         const mapGridHeight = STORE_LAYOUT.length;
