@@ -311,9 +311,10 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         
         <div className="absolute top-2/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
             {currentInstruction.type !== 'scan' && (
-                <div key={instructionIndex} className={cn("arrow-3d-container animate-fade-in", arrowDirection)}>
-                    <div className="arrow-3d"></div>
-                </div>
+              <div key={instructionIndex} className={cn("arrow-container", `arrow-${arrowDirection}`, "animate-fade-in")}>
+                <div className="arrow-body"></div>
+                <div className="arrow-head"></div>
+              </div>
             )}
              {currentInstruction.type !== 'scan' && (
                 <div className="absolute top-[130px] left-1/2 -translate-x-1/2 w-max bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
@@ -342,7 +343,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       <div className="w-full bg-white flex flex-col flex-shrink-0 h-1/2">
         <ScrollArea className="flex-1">
             <div className="flex flex-col h-full">
-                <div className="relative flex-1 w-full aspect-video max-h-[300px] mx-auto">
+                <div className="relative flex-1 w-full max-h-[300px] aspect-w-1 aspect-h-1 mx-auto">
                     <StoreMap items={itemsToMap} simulatedUserPosition={mapPosition} />
                 </div>
 
@@ -385,59 +386,86 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
           animation: fadeIn 0.5s ease-in-out;
         }
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        .arrow-container {
+          width: 80px;
+          height: 100px;
+          perspective: 200px;
+          animation: float 2s ease-in-out infinite;
+          transform-style: preserve-3d;
+          transition: transform 0.4s ease-in-out;
+        }
+
+        .arrow-body, .arrow-head {
+          position: absolute;
+          background-color: #2AC769;
+          box-shadow: 0 5px 15px rgba(42, 199, 105, 0.4);
+        }
+
+        .arrow-body {
+          width: 40px;
+          height: 60px;
+          left: 20px;
+          top: 40px;
+          transform: rotateX(60deg);
+        }
+        .arrow-body::before {
+          content: '';
+          position: absolute;
+          width: 100%;
+          height: 10px;
+          background-color: #1B7E48;
+          transform-origin: top left;
+          transform: rotateX(-90deg);
+        }
+
+        .arrow-head {
+          width: 80px;
+          height: 40px;
+          left: 0;
+          top: 0;
+          clip-path: polygon(50% 0, 100% 100%, 0% 100%);
+          transform: rotateX(60deg);
+        }
+        .arrow-head::before {
+          content: '';
+          position: absolute;
+          width: 100%;
+          height: 10px;
+          background-color: #1B7E48;
+          transform-origin: top center;
+          transform: translateZ(-10px) rotateX(-90deg) scaleX(0.75);
         }
         
-        .arrow-3d-container {
-            perspective: 400px;
-            width: 100px;
-            height: 120px;
-            transform-style: preserve-3d;
-            animation: float 3s ease-in-out infinite;
-            transition: transform 0.5s ease-out;
+        .arrow-container.arrow-left {
+            transform: rotateY(-60deg);
         }
 
-        .arrow-3d {
-            width: 100%;
-            height: 100%;
-            transform-style: preserve-3d;
-            position: relative;
-            transform: rotateX(60deg);
-            background-color: #2AC769;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            clip-path: polygon(50% 0, 100% 35%, 75% 35%, 75% 100%, 25% 100%, 25% 35%, 0 35%);
+        .arrow-container.arrow-right {
+            transform: rotateY(60deg);
         }
-
-        .arrow-3d::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #1B7E48;
-            transform: translateZ(-20px);
-            clip-path: polygon(50% 0, 100% 35%, 75% 35%, 75% 100%, 25% 100%, 25% 35%, 0 35%);
-        }
-
-        .arrow-3d-container.straight {
-            animation-name: float-straight;
+        
+        .arrow-container.arrow-straight {
             transform: rotateY(0deg);
         }
-        .arrow-3d-container.left {
-            animation-name: float-left;
-            transform: rotateY(-45deg);
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotateY(0); }
+            50% { transform: translateY(-20px) rotateY(0); }
+            100% { transform: translateY(0px) rotateY(0); }
         }
-        .arrow-3d-container.right {
-            animation-name: float-right;
-            transform: rotateY(45deg);
+        
+        .arrow-container.arrow-left {
+          animation-name: float-left;
+        }
+        .arrow-container.arrow-right {
+          animation-name: float-right;
+        }
+        .arrow-container.arrow-straight {
+          animation-name: float-straight;
         }
 
         @keyframes float-straight {
@@ -446,20 +474,18 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             100% { transform: translateY(0) rotateY(0deg); }
         }
         @keyframes float-left {
-            0% { transform: translateY(0) rotateY(-45deg); }
-            50% { transform: translateY(-20px) rotateY(-45deg); }
-            100% { transform: translateY(0) rotateY(-45deg); }
+            0% { transform: translateY(0) rotateY(-60deg); }
+            50% { transform: translateY(-20px) rotateY(-60deg); }
+            100% { transform: translateY(0) rotateY(-60deg); }
         }
         @keyframes float-right {
-            0% { transform: translateY(0) rotateY(45deg); }
-            50% { transform: translateY(-20px) rotateY(45deg); }
-            100% { transform: translateY(0) rotateY(45deg); }
+            0% { transform: translateY(0) rotateY(60deg); }
+            50% { transform: translateY(-20px) rotateY(60deg); }
+            100% { transform: translateY(0) rotateY(60deg); }
         }
       `}</style>
     </div>
   );
 }
-
-    
 
     
