@@ -136,7 +136,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       setInstructionIndex(0);
       setCurrentItem(null);
     }
-  }, [sortedItems]);
+  }, [sortedItems, currentPosition]);
 
 
   const currentInstruction = arInstructions[instructionIndex];
@@ -540,5 +540,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
 
     
