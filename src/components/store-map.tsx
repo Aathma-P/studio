@@ -28,14 +28,13 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
     if (!mapContainer) return;
 
     const updateCellSize = () => {
-        const containerWidth = mapContainer.offsetWidth;
-        const containerHeight = mapContainer.offsetHeight;
-        const containerPaddingX = parseFloat(getComputedStyle(mapContainer).paddingLeft) + parseFloat(getComputedStyle(mapContainer).paddingRight);
-        const containerPaddingY = parseFloat(getComputedStyle(mapContainer).paddingTop) + parseFloat(getComputedStyle(mapContainer).paddingBottom);
-        
-        const availableWidth = containerWidth - containerPaddingX;
-        const availableHeight = containerHeight - containerPaddingY;
+        const style = getComputedStyle(mapContainer);
+        const containerPaddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+        const containerPaddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
 
+        const availableWidth = mapContainer.clientWidth - containerPaddingX;
+        const availableHeight = mapContainer.clientHeight - containerPaddingY;
+        
         const mapGridWidth = STORE_LAYOUT[0].length;
         const mapGridHeight = STORE_LAYOUT.length;
         

@@ -87,6 +87,17 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     return orderedPath;
   }, [itemsToVisit]);
 
+  React.useEffect(() => {
+    if (sortedItems.length > 0) {
+      const instructions = getTurnByTurnInstructions(sortedItems);
+      setArInstructions(instructions);
+      setInstructionIndex(0);
+    } else {
+      setArInstructions([]);
+      setInstructionIndex(0);
+    }
+  }, [sortedItems]);
+
 
   React.useEffect(() => {
     const getCameraPermission = async () => {
@@ -121,19 +132,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         }
     }
   }, [toast]);
-
   
-  React.useEffect(() => {
-    if (sortedItems.length > 0) {
-      const instructions = getTurnByTurnInstructions(sortedItems);
-      setArInstructions(instructions);
-      setInstructionIndex(0);
-    } else {
-      setArInstructions([]);
-      setInstructionIndex(0);
-    }
-  }, [sortedItems]);
-
 
   const currentInstruction = arInstructions[instructionIndex];
   
@@ -144,16 +143,19 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
   const currentItem = React.useMemo(() => {
     if (!currentInstruction) return null;
-    const scanInstruction = arInstructions.slice(instructionIndex).find(inst => inst.type === 'scan');
-    if (scanInstruction) {
-        return sortedItems.find(it => it.id === scanInstruction.itemId) || null;
+    // Find the next 'scan' instruction from the current point
+    const nextScanInstruction = arInstructions.slice(instructionIndex).find(inst => inst.type === 'scan');
+    if (nextScanInstruction) {
+        // Find the item associated with that scan instruction
+        return sortedItems.find(it => it.id === nextScanInstruction.itemId) || null;
     }
+    // If no more scan instructions, there's no "current" item to navigate to
     return null;
   }, [instructionIndex, arInstructions, sortedItems]);
 
 
   const goToNextInstruction = React.useCallback(() => {
-    setInstructionIndex(prev => Math.min(prev + 1, arInstructions.length - 1));
+    setInstructionIndex(prev => Math.min(prev + 1, arInstructions.length -1));
   }, [arInstructions.length]);
 
 
@@ -165,6 +167,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     });
     
     let nextIndex = instructionIndex;
+    // Jump past all instructions for the current skipped item
     while(nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === itemToScan.id) {
         nextIndex++;
     }
@@ -172,6 +175,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     if (nextIndex < arInstructions.length) {
         setInstructionIndex(nextIndex);
     } else {
+        // If skipping the last item, go to the end
         setInstructionIndex(arInstructions.length - 1);
     }
   };
@@ -280,7 +284,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const mapPosition = currentInstruction?.pathPoint;
   const currentItemIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
   const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
-  const arrowDirection = currentInstruction.type === 'left' ? 'left' : currentInstruction.type === 'right' ? 'right' : 'straight';
+  const arrowDirection = ['left', 'turn-left'].includes(currentInstruction.type) ? 'left' 
+                       : ['right', 'turn-right'].includes(currentInstruction.type) ? 'right' 
+                       : 'straight';
 
 
   return (
@@ -303,17 +309,14 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/30 pointer-events-none" />
         
-        <div className="absolute top-2/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center scene">
+        <div className="absolute top-2/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
             {currentInstruction.type !== 'scan' && (
                 <div key={instructionIndex} className={cn("arrow-3d-container animate-fade-in", arrowDirection)}>
-                    <div className="arrow-3d">
-                        <div className="arrow-body"></div>
-                        <div className="arrow-head"></div>
-                    </div>
+                    <div className="arrow-3d"></div>
                 </div>
             )}
              {currentInstruction.type !== 'scan' && (
-                <div className="mt-32 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
+                <div className="absolute top-[130px] left-1/2 -translate-x-1/2 w-max bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
                     <h2 className="text-lg font-bold">
                         {currentInstruction.text}
                     </h2>
@@ -392,42 +395,13 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
           }
         }
         
-        .scene {
-            perspective: 400px;
-        }
-
         .arrow-3d-container {
+            perspective: 400px;
             width: 100px;
             height: 120px;
             transform-style: preserve-3d;
             animation: float 3s ease-in-out infinite;
-            transform: rotateX(60deg) rotateY(0deg);
             transition: transform 0.5s ease-out;
-        }
-
-        .arrow-3d-container.left {
-            transform: rotateX(60deg) rotateY(-45deg);
-        }
-        .arrow-3d-container.right {
-            transform: rotateX(60deg) rotateY(45deg);
-        }
-
-        @keyframes float {
-            0% { transform: rotateX(60deg) rotateY(0deg) translateY(0); }
-            50% { transform: rotateX(60deg) rotateY(0deg) translateY(-20px); }
-            100% { transform: rotateX(60deg) rotateY(0deg) translateY(0); }
-        }
-        .arrow-3d-container.left { animation-name: float-left; }
-        @keyframes float-left {
-             0% { transform: rotateX(60deg) rotateY(-45deg) translateY(0); }
-            50% { transform: rotateX(60deg) rotateY(-45deg) translateY(-20px); }
-            100% { transform: rotateX(60deg) rotateY(-45deg) translateY(0); }
-        }
-        .arrow-3d-container.right { animation-name: float-right; }
-        @keyframes float-right {
-             0% { transform: rotateX(60deg) rotateY(45deg) translateY(0); }
-            50% { transform: rotateX(60deg) rotateY(45deg) translateY(-20px); }
-            100% { transform: rotateX(60deg) rotateY(45deg) translateY(0); }
         }
 
         .arrow-3d {
@@ -435,78 +409,52 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             height: 100%;
             transform-style: preserve-3d;
             position: relative;
-        }
-        
-        .arrow-body {
-            position: absolute;
-            width: 30px;
-            height: 80px;
-            background: #2AC769;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            transform-style: preserve-3d;
+            transform: rotateX(60deg);
+            background-color: #2AC769;
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            clip-path: polygon(50% 0, 100% 35%, 75% 35%, 75% 100%, 25% 100%, 25% 35%, 0 35%);
         }
 
-        .arrow-body::before, .arrow-body::after {
+        .arrow-3d::before {
             content: '';
             position: absolute;
-            background: #1B7E48;
-            height: 100%;
-            width: 20px;
             top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1B7E48;
+            transform: translateZ(-20px);
+            clip-path: polygon(50% 0, 100% 35%, 75% 35%, 75% 100%, 25% 100%, 25% 35%, 0 35%);
         }
 
-        .arrow-body::before {
-            left: -20px;
-            transform: rotateY(-90deg);
-            transform-origin: right;
+        .arrow-3d-container.straight {
+            animation-name: float-straight;
+            transform: rotateY(0deg);
+        }
+        .arrow-3d-container.left {
+            animation-name: float-left;
+            transform: rotateY(-45deg);
+        }
+        .arrow-3d-container.right {
+            animation-name: float-right;
+            transform: rotateY(45deg);
         }
 
-        .arrow-body::after {
-            right: -20px;
-            transform: rotateY(90deg);
-            transform-origin: left;
+        @keyframes float-straight {
+            0% { transform: translateY(0) rotateY(0deg); }
+            50% { transform: translateY(-20px) rotateY(0deg); }
+            100% { transform: translateY(0) rotateY(0deg); }
         }
-
-        .arrow-head {
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 50px solid transparent;
-            border-right: 50px solid transparent;
-            border-bottom: 40px solid #2AC769;
-            transform-style: preserve-3d;
+        @keyframes float-left {
+            0% { transform: translateY(0) rotateY(-45deg); }
+            50% { transform: translateY(-20px) rotateY(-45deg); }
+            100% { transform: translateY(0) rotateY(-45deg); }
         }
-
-        .arrow-head::before, .arrow-head::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 0;
+        @keyframes float-right {
+            0% { transform: translateY(0) rotateY(45deg); }
+            50% { transform: translateY(-20px) rotateY(45deg); }
+            100% { transform: translateY(0) rotateY(45deg); }
         }
-
-        .arrow-head::before {
-            border-bottom: 40px solid #1B7E48;
-            border-left: 50px solid transparent;
-            right: -50px;
-            top: 0px;
-            transform-origin: bottom right;
-            transform: rotateY(90deg) rotateX(18.5deg) scaleX(0.78) skewY(2deg);
-        }
-        .arrow-head::after {
-            border-bottom: 40px solid #1B7E48;
-            border-right: 50px solid transparent;
-            left: -50px;
-            top: 0px;
-            transform-origin: bottom left;
-            transform: rotateY(-90deg) rotateX(18.5deg) scaleX(0.78) skewY(-2deg);
-        }
-
       `}</style>
     </div>
   );
