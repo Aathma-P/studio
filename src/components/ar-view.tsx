@@ -343,7 +343,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       <div className="w-full bg-white flex flex-col flex-shrink-0 h-1/2">
         <ScrollArea className="flex-1">
             <div className="flex flex-col h-full">
-                <div className="relative flex-1 w-full max-h-[300px] aspect-w-1 aspect-h-1 mx-auto">
+                <div className="relative flex-1 w-full max-h-[300px] aspect-w-1 aspect-h-1 mx-auto my-auto">
                     <StoreMap items={itemsToMap} simulatedUserPosition={mapPosition} />
                 </div>
 
@@ -441,11 +441,11 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         }
         
         .arrow-container.arrow-left {
-            transform: rotateY(-60deg);
+            transform: rotateY(60deg);
         }
 
         .arrow-container.arrow-right {
-            transform: rotateY(60deg);
+            transform: rotateY(-60deg);
         }
         
         .arrow-container.arrow-straight {
@@ -474,14 +474,14 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             100% { transform: translateY(0) rotateY(0deg); }
         }
         @keyframes float-left {
-            0% { transform: translateY(0) rotateY(-60deg); }
-            50% { transform: translateY(-20px) rotateY(-60deg); }
-            100% { transform: translateY(0) rotateY(-60deg); }
-        }
-        @keyframes float-right {
             0% { transform: translateY(0) rotateY(60deg); }
             50% { transform: translateY(-20px) rotateY(60deg); }
             100% { transform: translateY(0) rotateY(60deg); }
+        }
+        @keyframes float-right {
+            0% { transform: translateY(0) rotateY(-60deg); }
+            50% { transform: translateY(-20px) rotateY(-60deg); }
+            100% { transform: translateY(0) rotateY(-60deg); }
         }
       `}</style>
     </div>
