@@ -465,8 +465,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             height: 0; 
             border-left: 50px solid transparent;
             border-right: 50px solid transparent;
-            border-bottom: 80px solid rgba(42, 199, 105, 0.8);
+            border-bottom: 80px solid rgba(42, 199, 105, 0.9);
             background: transparent;
+            top: -30px;
         }
 
         .back {
@@ -477,31 +478,32 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             border-right: 50px solid transparent;
             border-bottom: 80px solid rgba(42, 199, 105, 0.7);
             background: transparent;
+            top: -30px;
         }
 
         .top {
             height: 20px;
-            transform: rotateX(90deg) translateZ(-40px) translateY(-50px) translateX(-50px);
-             background: rgba(42, 199, 105, 0.9);
+            transform: rotateX(90deg) translateZ(40px) translateY(-50px) translateX(-50px) scaleY(0.2);
+            background: rgba(42, 199, 105, 0.9);
         }
 
         .bottom {
              height: 20px;
-             transform: rotateX(-90deg) translateZ(-40px) translateY(50px) translateX(-50px);
+             width: 100px;
+             transform: rotateX(-90deg) translateZ(40px) translateY(50px) translateX(-50px);
         }
 
         .left {
             width: 80px;
             height: 20px;
-            transform: rotateY(-90deg) translateZ(50px)  translateY(40px) ;
-             background: rgba(42, 199, 105, 0.6);
-
+            transform: rotateY(-90deg) rotateX(51.5deg) translateZ(10px) translateY(15px) translateX(-40px);
+            background: rgba(42, 199, 105, 0.6);
         }
 
         .right {
             width: 80px;
             height: 20px;
-            transform: rotateY(90deg) translateZ(50px) translateY(40px);
+            transform: rotateY(90deg) rotateX(-51.5deg) translateZ(10px) translateY(15px) translateX(40px);
             background: rgba(42, 199, 105, 0.7);
         }
         
@@ -535,5 +537,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
 
     
