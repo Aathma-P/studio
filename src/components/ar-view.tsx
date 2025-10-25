@@ -38,21 +38,19 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
-  const [currentItem, setCurrentItem] = React.useState<ShoppingListItem | null>(null);
-  const [currentPosition, setCurrentPosition] = React.useState<any>(ENTRANCE_POS);
-
+  
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   
   const { toast } = useToast();
 
-  const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
-
-  const itemsToVisit = items.filter(i => !i.completed);
-    
+  const itemsToVisit = React.useMemo(() => items.filter(i => !i.completed), [items]);
+  
   const sortedItems = React.useMemo(() => {
     if (itemsToVisit.length === 0) return [];
   
+    const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+    
     const itemsWithNavPoints = itemsToVisit.map(item => ({
       ...item,
       navPoint: {
@@ -63,7 +61,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     
     let unvisited = [...itemsWithNavPoints];
     let orderedPath: typeof itemsWithNavPoints = [];
-    let currentPoint = currentPosition;
+    let currentPoint = ENTRANCE_POS;
   
     while (unvisited.length > 0) {
       let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
@@ -87,7 +85,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       }
     }
     return orderedPath;
-  }, [itemsToVisit, currentPosition]);
+  }, [itemsToVisit]);
 
 
   React.useEffect(() => {
@@ -127,16 +125,14 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   
   React.useEffect(() => {
     if (sortedItems.length > 0) {
-      const instructions = getTurnByTurnInstructions(sortedItems, currentPosition);
+      const instructions = getTurnByTurnInstructions(sortedItems);
       setArInstructions(instructions);
       setInstructionIndex(0);
-      setCurrentItem(sortedItems[0]);
     } else {
       setArInstructions([]);
       setInstructionIndex(0);
-      setCurrentItem(null);
     }
-  }, [sortedItems, currentPosition]);
+  }, [sortedItems]);
 
 
   const currentInstruction = arInstructions[instructionIndex];
@@ -146,34 +142,19 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     return sortedItems.find(it => it.id === currentInstruction.itemId);
   }, [currentInstruction, sortedItems]);
 
+  const currentItem = React.useMemo(() => {
+    if (!currentInstruction) return null;
+    const scanInstruction = arInstructions.slice(instructionIndex).find(inst => inst.type === 'scan');
+    if (scanInstruction) {
+        return sortedItems.find(it => it.id === scanInstruction.itemId) || null;
+    }
+    return null;
+  }, [instructionIndex, arInstructions, sortedItems]);
+
 
   const goToNextInstruction = React.useCallback(() => {
-    setInstructionIndex(prev => {
-        if (prev < arInstructions.length - 1) {
-            const nextIndex = prev + 1;
-            const nextInstruction = arInstructions[nextIndex];
-            setCurrentPosition(nextInstruction.pathPoint);
-            
-            const prevInstruction = arInstructions[prev];
-
-            if (prevInstruction.type === 'scan') {
-                const currentItemIndex = sortedItems.findIndex(it => it.id === prevInstruction.itemId);
-                const nextItem = sortedItems[currentItemIndex + 1];
-                setCurrentItem(nextItem || null); 
-            } else {
-                 const nextScanInstruction = arInstructions.slice(nextIndex).find(inst => inst.type === 'scan');
-                 if (nextScanInstruction) {
-                    const item = sortedItems.find(it => it.id === nextScanInstruction.itemId);
-                    if (item) setCurrentItem(item);
-                 } else {
-                    setCurrentItem(null);
-                 }
-            }
-            return nextIndex;
-        }
-        return prev;
-    });
-  }, [arInstructions, sortedItems]);
+    setInstructionIndex(prev => Math.min(prev + 1, arInstructions.length - 1));
+  }, [arInstructions.length]);
 
 
   const handleSkip = () => {
@@ -189,19 +170,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     }
 
     if (nextIndex < arInstructions.length) {
-        setCurrentPosition(arInstructions[nextIndex].pathPoint);
-        const nextScan = arInstructions.slice(nextIndex).find(inst => inst.type === 'scan');
-        if (nextScan) {
-            const item = sortedItems.find(it => it.id === nextScan.itemId);
-            setCurrentItem(item || null);
-        } else {
-            setCurrentItem(null);
-        }
         setInstructionIndex(nextIndex);
     } else {
-        // We've skipped the last item, move to finish state
         setInstructionIndex(arInstructions.length - 1);
-        setCurrentItem(null);
     }
   };
 
@@ -540,7 +511,3 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
-
-    
-
-    
