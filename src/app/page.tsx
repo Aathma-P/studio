@@ -2,20 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import HomePage from "@/components/HomePage";
+import { useRouter } from "next/navigation";
 import splashImg from "@/assets/images/Splash.png";
 
 export default function SplashScreen() {
   const [showSplash, setShowSplash] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setFadeOut(true);
-      setTimeout(() => setShowSplash(false), 700);
+      setTimeout(() => {
+        setShowSplash(false);
+        router.replace("/home"); // Redirect to the home page
+      }, 700);
     }, 1500); // ⏱️ show splash for 1.5 seconds
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   if (showSplash) {
     return (
@@ -36,5 +40,6 @@ export default function SplashScreen() {
     );
   }
 
-  return <HomePage />;
+  // Render nothing or a loading spinner while redirecting
+  return null;
 }
