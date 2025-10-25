@@ -154,19 +154,16 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             const nextIndex = prev + 1;
             const prevInstruction = arInstructions[prev];
 
-            // Logic to update the currentItem based on the *next* scan instruction
             if (prevInstruction.type === 'scan') {
                 const currentItemIndex = sortedItems.findIndex(it => it.id === prevInstruction.itemId);
                 const nextItem = sortedItems[currentItemIndex + 1];
-                setCurrentItem(nextItem || null); // Set to next item or null if it's the last one
+                setCurrentItem(nextItem || null); 
             } else {
-                // For non-scan instructions, find the next upcoming scan instruction
                  const nextScanInstruction = arInstructions.slice(nextIndex).find(inst => inst.type === 'scan');
                  if (nextScanInstruction) {
                     const item = sortedItems.find(it => it.id === nextScanInstruction.itemId);
                     if (item) setCurrentItem(item);
                  } else {
-                    // No more items to scan, heading to checkout
                     setCurrentItem(null);
                  }
             }
@@ -183,15 +180,12 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       title: `Skipped ${itemToScan.name}`,
       description: "Moving to the next item on your list.",
     });
-    // We need to advance multiple steps: past the current 'turn' and 'scan' instructions for the skipped item.
-    // The easiest way to do this is find the next instruction that is NOT related to the current item.
     
     let nextIndex = instructionIndex + 1;
     while(nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === itemToScan.id) {
         nextIndex++;
     }
 
-    // Now find the next item in the sorted list
     const currentItemIndex = sortedItems.findIndex(it => it.id === itemToScan.id);
     const nextItem = sortedItems[currentItemIndex + 1];
     setCurrentItem(nextItem || null);
@@ -303,10 +297,11 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const currentPosition = currentInstruction?.pathPoint;
   const currentItemIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
   const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
+  const arrowDirection = currentInstruction.type === 'left' ? 'left' : currentInstruction.type === 'right' ? 'right' : 'straight';
+
 
   return (
     <div className="w-full h-full flex flex-col bg-black overflow-hidden">
-      {/* Top half: Camera view */}
       <div className="relative w-full h-1/2" onClick={handleUserTap}>
         <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
         <canvas ref={canvasRef} className="hidden" />
@@ -325,22 +320,26 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/30 pointer-events-none" />
         
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center scene">
             {currentInstruction.type !== 'scan' && (
-                <div
-                    key={instructionIndex}
-                    className="flex flex-col items-center animate-fade-in"
-                >
-                    <div className="bg-blue-500/80 backdrop-blur-sm rounded-full w-28 h-28 flex items-center justify-center shadow-lg">
-                        <InstructionIcon className="w-16 h-16 text-white drop-shadow-lg" />
-                    </div>
-                    <div className="mt-4 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
-                        <h2 className="text-lg font-bold">
-                            {currentInstruction.text}
-                        </h2>
+                <div key={instructionIndex} className={cn("arrow-container animate-fade-in", arrowDirection)}>
+                    <div className="arrow-3d">
+                        <div className="arrow-face front"></div>
+                        <div className="arrow-face back"></div>
+                        <div className="arrow-face top"></div>
+                        <div className="arrow-face bottom"></div>
+                        <div className="arrow-face left"></div>
+                        <div className="arrow-face right"></div>
                     </div>
                 </div>
             )}
+             {currentInstruction.type !== 'scan' && (
+                <div className="mt-4 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
+                    <h2 className="text-lg font-bold">
+                        {currentInstruction.text}
+                    </h2>
+                </div>
+             )}
         </div>
         
          <div className="absolute top-4 right-4 z-20">
@@ -358,7 +357,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         </div>
       </div>
 
-      {/* Bottom half: Map and Controls */}
       <div className="w-full bg-white flex flex-col flex-shrink-0 h-1/2">
         <ScrollArea className="flex-1">
             <div className="flex flex-col h-full">
@@ -414,6 +412,125 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             transform: scale(1);
           }
         }
+        
+        .scene {
+            perspective: 400px;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .arrow-container {
+            width: 100px;
+            height: 100px;
+            animation: float 3s ease-in-out infinite;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .arrow-container.left {
+            transform: rotateY(-45deg);
+        }
+        
+        .arrow-container.right {
+            transform: rotateY(45deg);
+        }
+        
+        .arrow-container.straight {
+            transform: rotateY(0deg);
+        }
+
+        .arrow-3d {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-35deg) rotateY(0deg) translateZ(20px);
+        }
+
+        .arrow-face {
+            position: absolute;
+            width: 100px;
+            height: 20px;
+            background: rgba(42, 199, 105, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(42, 199, 105, 0.8);
+        }
+
+        .front {
+            transform: rotateY(0deg) translateZ(10px);
+            width: 0; 
+            height: 0; 
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 80px solid rgba(42, 199, 105, 0.8);
+            background: transparent;
+        }
+
+        .back {
+            transform: rotateY(180deg) translateZ(10px);
+            width: 0; 
+            height: 0; 
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 80px solid rgba(42, 199, 105, 0.7);
+            background: transparent;
+        }
+
+        .top {
+            height: 20px;
+            transform: rotateX(90deg) translateZ(-40px) translateY(-50px) translateX(-50px);
+             background: rgba(42, 199, 105, 0.9);
+        }
+
+        .bottom {
+             height: 20px;
+             transform: rotateX(-90deg) translateZ(-40px) translateY(50px) translateX(-50px);
+        }
+
+        .left {
+            width: 80px;
+            height: 20px;
+            transform: rotateY(-90deg) translateZ(50px)  translateY(40px) ;
+             background: rgba(42, 199, 105, 0.6);
+
+        }
+
+        .right {
+            width: 80px;
+            height: 20px;
+            transform: rotateY(90deg) translateZ(50px) translateY(40px);
+            background: rgba(42, 199, 105, 0.7);
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px) rotateY(0deg); }
+            50% { transform: translateY(-20px) rotateY(0deg); }
+            100% { transform: translateY(0px) rotateY(0deg); }
+        }
+        
+        .arrow-container.left {
+             animation-name: float-left;
+        }
+         @keyframes float-left {
+            0% { transform: translateY(0px) rotateY(-45deg); }
+            50% { transform: translateY(-20px) rotateY(-45deg); }
+            100% { transform: translateY(0px) rotateY(-45deg); }
+        }
+
+        .arrow-container.right {
+             animation-name: float-right;
+        }
+
+        @keyframes float-right {
+            0% { transform: translateY(0px) rotateY(45deg); }
+            50% { transform: translateY(-20px) rotateY(45deg); }
+            100% { transform: translateY(0px) rotateY(45deg); }
+        }
+
+
       `}</style>
     </div>
   );
