@@ -39,6 +39,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
   const [currentItem, setCurrentItem] = React.useState<ShoppingListItem | null>(null);
+  const [currentPosition, setCurrentPosition] = React.useState<any>(ENTRANCE_POS);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -47,48 +48,46 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
   const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
 
+  const itemsToVisit = items.filter(i => !i.completed);
+    
   const sortedItems = React.useMemo(() => {
-    if (items.length === 0) return [];
+    if (itemsToVisit.length === 0) return [];
   
-    const itemsWithNavPoints = items.map(item => ({
+    const itemsWithNavPoints = itemsToVisit.map(item => ({
       ...item,
       navPoint: {
         x: getAisleNavX(item.location.aisle),
         y: item.location.section,
       }
     }));
-
-    const findShortestGreedyPath = (itemsToVisit: typeof itemsWithNavPoints): typeof itemsWithNavPoints => {
-      let unvisited = [...itemsToVisit];
-      let orderedPath: typeof itemsWithNavPoints = [];
-      let currentPoint = ENTRANCE_POS;
-
-      while (unvisited.length > 0) {
-        let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
-        let shortestDistance = Infinity;
-
-        for (const item of unvisited) {
-            const path = findPath(currentPoint, item.navPoint);
-            const distance = path ? path.length : Infinity;
-            if (distance < shortestDistance) {
-                shortestDistance = distance;
-                nearestItem = item;
-            }
-        }
-
-        if (nearestItem) {
-          orderedPath.push(nearestItem);
-          currentPoint = nearestItem.navPoint;
-          unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
-        } else {
-          break;
-        }
-      }
-      return orderedPath;
-    };
+    
+    let unvisited = [...itemsWithNavPoints];
+    let orderedPath: typeof itemsWithNavPoints = [];
+    let currentPoint = currentPosition;
   
-    return findShortestGreedyPath(itemsWithNavPoints);
-  }, [items]);
+    while (unvisited.length > 0) {
+      let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
+      let shortestDistance = Infinity;
+  
+      for (const item of unvisited) {
+          const path = findPath(currentPoint, item.navPoint);
+          const distance = path ? path.length : Infinity;
+          if (distance < shortestDistance) {
+              shortestDistance = distance;
+              nearestItem = item;
+          }
+      }
+  
+      if (nearestItem) {
+        orderedPath.push(nearestItem);
+        currentPoint = nearestItem.navPoint;
+        unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
+      } else {
+        break;
+      }
+    }
+    return orderedPath;
+  }, [itemsToVisit, currentPosition]);
 
 
   React.useEffect(() => {
@@ -128,7 +127,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   
   React.useEffect(() => {
     if (sortedItems.length > 0) {
-      const instructions = getTurnByTurnInstructions(sortedItems);
+      const instructions = getTurnByTurnInstructions(sortedItems, currentPosition);
       setArInstructions(instructions);
       setInstructionIndex(0);
       setCurrentItem(sortedItems[0]);
@@ -137,7 +136,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       setInstructionIndex(0);
       setCurrentItem(null);
     }
-  }, [sortedItems]);
+  }, [sortedItems, currentPosition]);
 
 
   const currentInstruction = arInstructions[instructionIndex];
@@ -152,6 +151,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     setInstructionIndex(prev => {
         if (prev < arInstructions.length - 1) {
             const nextIndex = prev + 1;
+            const nextInstruction = arInstructions[nextIndex];
+            setCurrentPosition(nextInstruction.pathPoint);
+            
             const prevInstruction = arInstructions[prev];
 
             if (prevInstruction.type === 'scan') {
@@ -181,16 +183,26 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       description: "Moving to the next item on your list.",
     });
     
-    let nextIndex = instructionIndex + 1;
+    let nextIndex = instructionIndex;
     while(nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === itemToScan.id) {
         nextIndex++;
     }
 
-    const currentItemIndex = sortedItems.findIndex(it => it.id === itemToScan.id);
-    const nextItem = sortedItems[currentItemIndex + 1];
-    setCurrentItem(nextItem || null);
-
-    setInstructionIndex(nextIndex);
+    if (nextIndex < arInstructions.length) {
+        setCurrentPosition(arInstructions[nextIndex].pathPoint);
+        const nextScan = arInstructions.slice(nextIndex).find(inst => inst.type === 'scan');
+        if (nextScan) {
+            const item = sortedItems.find(it => it.id === nextScan.itemId);
+            setCurrentItem(item || null);
+        } else {
+            setCurrentItem(null);
+        }
+        setInstructionIndex(nextIndex);
+    } else {
+        // We've skipped the last item, move to finish state
+        setInstructionIndex(arInstructions.length - 1);
+        setCurrentItem(null);
+    }
   };
 
 
@@ -294,7 +306,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   }
 
   const InstructionIcon = instructionIcons[currentInstruction.type] || ArrowUp;
-  const currentPosition = currentInstruction?.pathPoint;
+  const mapPosition = currentInstruction?.pathPoint;
   const currentItemIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
   const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
   const arrowDirection = currentInstruction.type === 'left' ? 'left' : currentInstruction.type === 'right' ? 'right' : 'straight';
@@ -324,14 +336,13 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             {currentInstruction.type !== 'scan' && (
                 <div key={instructionIndex} className={cn("arrow-3d-container animate-fade-in", arrowDirection)}>
                     <div className="arrow-3d">
-                        <div className="arrow-chevron"></div>
-                        <div className="arrow-chevron"></div>
-                        <div className="arrow-chevron"></div>
+                        <div className="arrow-body"></div>
+                        <div className="arrow-head"></div>
                     </div>
                 </div>
             )}
              {currentInstruction.type !== 'scan' && (
-                <div className="mt-24 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
+                <div className="mt-32 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
                     <h2 className="text-lg font-bold">
                         {currentInstruction.text}
                     </h2>
@@ -358,7 +369,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         <ScrollArea className="flex-1">
             <div className="flex flex-col h-full">
                 <div className="relative flex-1 min-h-[250px]">
-                    <StoreMap items={itemsToMap} simulatedUserPosition={currentPosition} />
+                    <StoreMap items={itemsToMap} simulatedUserPosition={mapPosition} />
                 </div>
 
                 {currentItem && (
@@ -411,87 +422,118 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         }
         
         .scene {
-            perspective: 600px;
-            transform-style: preserve-3d;
+            perspective: 400px;
         }
 
         .arrow-3d-container {
-            width: 120px;
+            width: 100px;
             height: 120px;
             transform-style: preserve-3d;
             animation: float 3s ease-in-out infinite;
-            transform: rotateX(50deg);
+            transform: rotateX(60deg) rotateY(0deg);
             transition: transform 0.5s ease-out;
         }
-        
-        .arrow-3d-container.left {
-            transform: rotateX(50deg) rotateZ(-45deg);
-        }
 
+        .arrow-3d-container.left {
+            transform: rotateX(60deg) rotateY(-45deg);
+        }
         .arrow-3d-container.right {
-            transform: rotateX(50deg) rotateZ(45deg);
+            transform: rotateX(60deg) rotateY(45deg);
         }
 
         @keyframes float {
-            0% { transform: rotateX(50deg) translateY(0); }
-            50% { transform: rotateX(50deg) translateY(-20px); }
-            100% { transform: rotateX(50deg) translateY(0); }
+            0% { transform: rotateX(60deg) rotateY(0deg) translateY(0); }
+            50% { transform: rotateX(60deg) rotateY(0deg) translateY(-20px); }
+            100% { transform: rotateX(60deg) rotateY(0deg) translateY(0); }
         }
-
-        .arrow-3d-container.left {
-             animation-name: float-left;
-        }
+        .arrow-3d-container.left { animation-name: float-left; }
         @keyframes float-left {
-            0% { transform: rotateX(50deg) rotateZ(-45deg) translateY(0); }
-            50% { transform: rotateX(50deg) rotateZ(-45deg) translateY(-20px); }
-            100% { transform: rotateX(50deg) rotateZ(-45deg) translateY(0); }
+             0% { transform: rotateX(60deg) rotateY(-45deg) translateY(0); }
+            50% { transform: rotateX(60deg) rotateY(-45deg) translateY(-20px); }
+            100% { transform: rotateX(60deg) rotateY(-45deg) translateY(0); }
         }
-
-        .arrow-3d-container.right {
-             animation-name: float-right;
-        }
+        .arrow-3d-container.right { animation-name: float-right; }
         @keyframes float-right {
-            0% { transform: rotateX(50deg) rotateZ(45deg) translateY(0); }
-            50% { transform: rotateX(50deg) rotateZ(45deg) translateY(-20px); }
-            100% { transform: rotateX(50deg) rotateZ(45deg) translateY(0); }
+             0% { transform: rotateX(60deg) rotateY(45deg) translateY(0); }
+            50% { transform: rotateX(60deg) rotateY(45deg) translateY(-20px); }
+            100% { transform: rotateX(60deg) rotateY(45deg) translateY(0); }
         }
 
         .arrow-3d {
             width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             transform-style: preserve-3d;
-            filter: drop-shadow(0 15px 5px rgba(0,0,0,0.3));
+            position: relative;
+        }
+        
+        .arrow-body {
+            position: absolute;
+            width: 30px;
+            height: 80px;
+            background: #2AC769;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
-        .arrow-chevron {
-            width: 60px;
-            height: 60px;
-            margin-top: -35px;
-            border-style: solid;
-            border-color: #2AC769;
-            border-width: 0 12px 12px 0;
-            transform: rotate(315deg);
-            background: linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
-            box-shadow: inset -5px 5px 15px rgba(0,0,0,0.1);
+        .arrow-body::before, .arrow-body::after {
+            content: '';
+            position: absolute;
+            background: #1B7E48;
+            height: 100%;
+            width: 20px;
+            top: 0;
         }
 
-        .arrow-chevron:first-child {
-            animation: chevron-fade 1.5s infinite 0s;
-        }
-        .arrow-chevron:nth-child(2) {
-            animation: chevron-fade 1.5s infinite 0.2s;
-        }
-        .arrow-chevron:nth-child(3) {
-            animation: chevron-fade 1.5s infinite 0.4s;
+        .arrow-body::before {
+            left: -20px;
+            transform: rotateY(-90deg);
+            transform-origin: right;
         }
 
-        @keyframes chevron-fade {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
+        .arrow-body::after {
+            right: -20px;
+            transform: rotateY(90deg);
+            transform-origin: left;
+        }
+
+        .arrow-head {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 40px solid #2AC769;
+            transform-style: preserve-3d;
+        }
+
+        .arrow-head::before, .arrow-head::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+
+        .arrow-head::before {
+            border-bottom: 40px solid #1B7E48;
+            border-left: 50px solid transparent;
+            right: -50px;
+            top: 0px;
+            transform-origin: bottom right;
+            transform: rotateY(90deg) rotateX(18.5deg) scaleX(0.78) skewY(2deg);
+        }
+        .arrow-head::after {
+            border-bottom: 40px solid #1B7E48;
+            border-right: 50px solid transparent;
+            left: -50px;
+            top: 0px;
+            transform-origin: bottom left;
+            transform: rotateY(-90deg) rotateX(18.5deg) scaleX(0.78) skewY(-2deg);
         }
 
       `}</style>
