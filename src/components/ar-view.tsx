@@ -2,7 +2,8 @@
 "use client";
 
 import * as React from "react";
-import { ShoppingBasket, LoaderCircle, CameraOff, SkipForward } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ShoppingBasket, LoaderCircle, CameraOff, SkipForward, ShoppingCart } from "lucide-react";
 import type { ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   
   const { toast } = useToast();
+  const router = useRouter();
 
   React.useEffect(() => {
     const itemsToVisit = items.filter(i => !i.completed);
@@ -85,7 +87,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
   // This dependency array is now stable. It only reruns when items are added/removed,
   // not when their 'completed' status changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.map(i => i.id).join(',')]);
 
 
@@ -245,6 +246,16 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     }
   }
 
+  const handleProceedToCart = () => {
+    const completedItems = items.filter(item => item.completed);
+    if (completedItems.length === 0) {
+        router.push('/cart');
+        return;
+    }
+    const cartData = encodeURIComponent(JSON.stringify(completedItems.map(item => ({ id: item.id, quantity: item.quantity, completed: item.completed }))));
+    router.push(`/cart?items=${cartData}`);
+  };
+
   if (hasCameraPermission === null) {
       return (
           <div className="w-full h-full flex items-center justify-center bg-black">
@@ -257,11 +268,18 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
   if (items.length > 0 && itemsRemainingToFind === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-black">
-        <div className="text-center text-white">
+      <div className="w-full h-full flex items-center justify-center bg-black p-4">
+        <div className="text-center text-white bg-black/50 backdrop-blur-md p-8 rounded-2xl animate-fade-in">
           <ShoppingBasket className="mx-auto h-12 w-12 text-green-500" />
-          <h3 className="mt-4 text-lg font-medium">Shopping Complete!</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{arInstructions[arInstructions.length-1]?.text || "Proceed to checkout."}</p>
+          <h3 className="mt-4 text-2xl font-bold">Shopping Complete!</h3>
+          <p className="mt-2 text-gray-300">You have found all the items on your list.</p>
+          <Button 
+            onClick={handleProceedToCart}
+            className="mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-base"
+          >
+            <ShoppingCart className="mr-2 h-5 w-5" />
+            Proceed to Cart
+          </Button>
         </div>
       </div>
     );
