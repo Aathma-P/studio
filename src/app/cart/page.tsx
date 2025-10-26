@@ -15,9 +15,9 @@ import illust from "@/assets/images/illust.png";
 import { cn } from "@/lib/utils";
 
 const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
     }).format(price);
 }
 
