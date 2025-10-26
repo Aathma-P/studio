@@ -75,6 +75,15 @@ export default function CompassView({ items }: CompassViewProps) {
 
   const currentInstruction = instructions[instructionIndex];
 
+  const currentItem = React.useMemo(() => {
+    if (!currentInstruction) return null;
+    const nextScanInstruction = instructions.slice(instructionIndex).find(inst => inst.type === 'scan' || inst.type === 'finish');
+    if (nextScanInstruction) {
+        return sortedItems.find(it => it.id === nextScanInstruction.itemId) || sortedItems[sortedItems.length - 1];
+    }
+    return null;
+  }, [instructionIndex, instructions, sortedItems, currentInstruction]);
+
   const goToNextInstruction = () => {
     setInstructionIndex(prev => Math.min(prev + 1, instructions.length - 1));
   };
@@ -125,14 +134,6 @@ export default function CompassView({ items }: CompassViewProps) {
   };
   
   const mapPosition = currentInstruction?.pathPoint;
-  const currentItem = React.useMemo(() => {
-    if (!currentInstruction) return null;
-    const nextScanInstruction = instructions.slice(instructionIndex).find(inst => inst.type === 'scan' || inst.type === 'finish');
-    if (nextScanInstruction) {
-        return sortedItems.find(it => it.id === nextScanInstruction.itemId) || sortedItems[sortedItems.length - 1];
-    }
-    return null;
-  }, [instructionIndex, instructions, sortedItems]);
 
   return (
     <div className="w-full h-full flex flex-col lg:flex-row items-center justify-center bg-gray-900 text-white p-4 gap-8 overflow-hidden">
