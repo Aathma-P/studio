@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Map, Camera, List, ScanLine as Scan, User, Compass } from "lucide-react";
+import { Map, Camera, List, User, Compass } from "lucide-react";
 import { useSearchParams } from 'next/navigation'
 
 
@@ -14,16 +14,14 @@ import { Button } from "@/components/ui/button";
 import ShoppingList from "@/components/shopping-list";
 import StoreMap from "@/components/store-map";
 import ArView from "@/components/ar-view";
-import BarcodeScanner from "@/components/barcode-scanner";
 import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import scanBanner from "@/assets/images/scan-banner.png";
 import ProfilePage from "@/components/profile-page";
 import CompassView from "@/components/compass-view";
 
 
-type View = "list" | "map" | "ar" | "scan" | "scan-banner" | "profile" | "compass";
+type View = "list" | "map" | "ar" | "profile" | "compass";
 
 export default function HomePage() {
   const [view, setView] = React.useState<View>("list");
@@ -119,24 +117,6 @@ export default function HomePage() {
     );
   };
 
-  const handleScanSuccess = (scannedId: string) => {
-    const product = ALL_PRODUCTS.find(p => p.id === scannedId);
-    if(product) {
-        handleAddItem(product);
-        toast({
-            title: "Item Added",
-            description: `${product.name} has been added to your shopping list.`,
-        });
-        setView('list');
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Item Not Found",
-            description: "The scanned code does not match any product in our store.",
-        });
-    }
-  }
-
   const handleItemScannedAndFound = (itemId: string) => {
     // This is called from AR view when an item is confirmed found.
     // It marks the item as completed in the main list.
@@ -200,7 +180,7 @@ export default function HomePage() {
             onToggleItem={handleToggleItem}
             onIncreaseQuantity={handleIncreaseQuantity}
             onDecreaseQuantity={handleDecreaseQuantity}
-            onScanClick={() => setView("scan-banner")}
+            onScanClick={() => toast({ title: "Scanner temporarily disabled"})}
             listTotal={listTotal}
             cartTotal={cartTotal}
           />
@@ -210,27 +190,6 @@ export default function HomePage() {
            {view === 'map' && <StoreMap items={shoppingList} />}
            {view === 'compass' && <CompassView items={shoppingList.filter(i => !i.completed)} />}
            {view === 'ar' && isClient && <ArView items={shoppingList.filter(i => !i.completed)} onItemScannedAndFound={handleItemScannedAndFound} />}
-           {view === "scan-banner" && (
-            <div className="flex items-center justify-center h-full w-full bg-[#EAF6EE] p-4">
-              <div className="relative w-full max-w-md">
-                <Image
-                  src={scanBanner}
-                  alt="Scan the image"
-                  width={800}
-                  height={600}
-                  className="rounded-xl object-contain w-full h-auto"
-                  priority
-                />
-                <button
-                  onClick={() => setView("scan")}
-                  className="absolute top-[40%] left-[10%] bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-md shadow-md transition-all duration-200"
-                >
-                  Scan
-                </button>
-              </div>
-            </div>
-          )}
-           {view === 'scan' && isClient && <BarcodeScanner onScanSuccess={handleScanSuccess} />}
            {view === 'profile' && isClient && <ProfilePage purchases={previousPurchases} />}
            {view === 'list' && (
              <div className="h-full md:hidden">
@@ -242,7 +201,7 @@ export default function HomePage() {
                   onToggleItem={handleToggleItem}
                   onIncreaseQuantity={handleIncreaseQuantity}
                   onDecreaseQuantity={handleDecreaseQuantity}
-                  onScanClick={() => setView("scan-banner")}
+                  onScanClick={() => toast({ title: "Scanner temporarily disabled"})}
                   listTotal={listTotal}
                   cartTotal={cartTotal}
                 />
