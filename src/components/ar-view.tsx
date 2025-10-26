@@ -352,9 +352,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
                       `}
                     </style>
                   </defs>
-                  <path d="M50 0 L100 50 L50 100 L0 50 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-1" />
-                  <path d="M50 0 L100 50 L50 100 L0 50 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-2" />
-                  <path d="M50 0 L100 50 L50 100 L0 50 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-3" />
+                  <path d="M50 0 L100 50 L80 50 L50 20 L20 50 L0 50 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-1" />
+                  <path d="M50 20 L100 70 L80 70 L50 40 L20 70 L0 70 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-2" />
+                  <path d="M50 40 L100 90 L80 90 L50 60 L20 90 L0 90 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-3" />
                 </svg>
               </div>
             <div className="mt-16 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
