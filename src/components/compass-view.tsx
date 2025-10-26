@@ -73,9 +73,10 @@ export default function CompassView({ items }: CompassViewProps) {
     }
   }, [sortedItems]);
   
+  const currentInstruction = instructions[instructionIndex];
+
   const currentItem = React.useMemo(() => {
     if (instructions.length === 0 || instructionIndex >= instructions.length) return null;
-    const currentInstruction = instructions[instructionIndex];
     if (!currentInstruction) return null;
 
     const nextScanInstruction = instructions.slice(instructionIndex).find(inst => inst.type === 'scan' || inst.type === 'finish');
@@ -83,9 +84,8 @@ export default function CompassView({ items }: CompassViewProps) {
         return sortedItems.find(it => it.id === nextScanInstruction.itemId) || sortedItems[sortedItems.length - 1];
     }
     return null;
-  }, [instructionIndex, instructions, sortedItems]);
+  }, [instructionIndex, instructions, sortedItems, currentInstruction]);
 
-  const currentInstruction = instructions[instructionIndex];
 
   const goToNextInstruction = () => {
     setInstructionIndex(prev => Math.min(prev + 1, instructions.length - 1));
@@ -160,9 +160,10 @@ export default function CompassView({ items }: CompassViewProps) {
 
                 <ArrowUp 
                     className={cn(
-                        'w-24 h-24 md:w-32 md:h-32 text-green-500 transition-transform duration-500 ease-in-out',
+                        'w-24 h-24 md:w-32 md:h-32 text-green-500 transition-transform duration-700',
                         getArrowRotation()
-                    )} 
+                    )}
+                    style={{ transitionTimingFunction: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                     strokeWidth={1.5}
                 />
             </div>
