@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -26,13 +25,16 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
+  const [skippedItemIds, setSkippedItemIds] = React.useState<string[]>([]);
   
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   
   const { toast } = useToast();
 
-  const itemsToVisit = React.useMemo(() => items.filter(i => !i.completed), [items]);
+  const itemsToVisit = React.useMemo(() => 
+    items.filter(i => !i.completed && !skippedItemIds.includes(i.id)), 
+  [items, skippedItemIds]);
   
   const sortedItems = React.useMemo(() => {
     if (itemsToVisit.length === 0) return [];
@@ -148,31 +150,13 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
   const handleSkip = () => {
     if (isScanning || !itemToScan) return;
+    
     toast({
       title: `Skipped ${itemToScan.name}`,
       description: "Moving to the next item on your list.",
     });
-    
-    const currentItemId = itemToScan.id;
-    let nextIndex = instructionIndex;
 
-    // Find the end of instructions for the current item
-    while(nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === currentItemId) {
-        nextIndex++;
-    }
-
-    // Now, `nextIndex` is at the start of the next item's instructions, or at the end.
-    if (nextIndex < arInstructions.length) {
-        // If it's a 'scan' instruction, it might be for the next item. We need to back up to the turn instruction.
-        let targetIndex = nextIndex;
-        while(targetIndex > 0 && arInstructions[targetIndex - 1].itemId === arInstructions[targetIndex].itemId) {
-            targetIndex--;
-        }
-        setInstructionIndex(targetIndex);
-    } else {
-        // If we've skipped the last item, go to the final "finish" instruction.
-        setInstructionIndex(arInstructions.length - 1);
-    }
+    setSkippedItemIds(prev => [...prev, itemToScan.id]);
   };
 
 
@@ -204,7 +188,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         
         if (result.isFound) {
             onItemScannedAndFound(itemToScan.id);
-            setTimeout(() => {
+            // The path will be recalculated automatically because the 'items' prop will change
+            // But we can give a smoother experience by just advancing the instruction index
+             setTimeout(() => {
                 goToNextInstruction();
                 setIsScanning(false);
                 setScanResult(null);
@@ -247,7 +233,31 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       )
   }
   
-  if (items.length === 0) {
+  if (items.filter(i => !i.completed).length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <div className="text-center text-white">
+          <ShoppingBasket className="mx-auto h-12 w-12 text-green-500" />
+          <h3 className="mt-4 text-lg font-medium">Shopping Complete!</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{arInstructions[arInstructions.length-1]?.text || "Proceed to checkout."}</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (itemsToVisit.length === 0 && items.filter(i => !i.completed).length > 0) {
+     return (
+      <div className="w-full h-full flex items-center justify-center bg-black" onClick={handleUserTap}>
+        <div className="text-center text-white">
+          <ShoppingBasket className="mx-auto h-12 w-12 text-green-500" />
+          <h3 className="mt-4 text-lg font-medium">Shopping Complete!</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{currentInstruction?.text || "You've found or skipped all your items. Proceed to checkout."}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentInstruction) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
         <div className="text-center text-white">
@@ -256,19 +266,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
           <p className="mt-1 text-sm text-muted-foreground">Add items to your list to start AR navigation.</p>
         </div>
       </div>
-    );
-  }
-  
-  if (!currentInstruction || instructionIndex >= arInstructions.length || currentInstruction.type === 'finish') {
-     return (
-      <div className="w-full h-full flex items-center justify-center bg-black" onClick={handleUserTap}>
-        <div className="text-center text-white">
-          <ShoppingBasket className="mx-auto h-12 w-12 text-green-500" />
-          <h3 className="mt-4 text-lg font-medium">Shopping Complete!</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{currentInstruction?.text || "Proceed to checkout."}</p>
-        </div>
-      </div>
-    );
+    )
   }
 
   const mapPosition = currentInstruction?.pathPoint;
@@ -381,7 +379,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
                       <StoreMap items={itemsToMap} simulatedUserPosition={mapPosition} />
                   </div>
                   <div className="flex flex-col justify-between">
-                      {currentItem && (
+                      {currentItem ? (
                           <div className="space-y-3">
                               <div>
                                   <p className="text-sm font-medium text-gray-500">Next Item</p>
@@ -415,6 +413,12 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
                                   </Button>
                               </div>
                           </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                          <ShoppingBasket className="h-8 w-8 mb-2" />
+                          <p className="font-semibold">All items found!</p>
+                          <p className="text-sm">Proceed to checkout.</p>
+                        </div>
                       )}
                   </div>
               </div>
@@ -468,4 +472,3 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
-
