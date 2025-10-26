@@ -1,7 +1,8 @@
+
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CornerUpLeft, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, ArrowRight, SkipForward, ChevronRight } from "lucide-react";
+import { ShoppingBasket, LoaderCircle, CameraOff, SkipForward } from "lucide-react";
 import type { ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -130,20 +131,19 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
   const currentItem = React.useMemo(() => {
     if (!currentInstruction) return null;
-    // Find the next 'scan' instruction from the current point
     const nextScanInstruction = arInstructions.slice(instructionIndex).find(inst => inst.type === 'scan');
     if (nextScanInstruction) {
-        // Find the item associated with that scan instruction
         return sortedItems.find(it => it.id === nextScanInstruction.itemId) || null;
     }
-    // If no more scan instructions, there's no "current" item to navigate to
     return null;
   }, [instructionIndex, arInstructions, sortedItems]);
 
 
   const goToNextInstruction = React.useCallback(() => {
-    setInstructionIndex(prev => Math.min(prev + 1, arInstructions.length -1));
-  }, [arInstructions.length]);
+    if (instructionIndex < arInstructions.length - 1) {
+      setInstructionIndex(prev => prev + 1);
+    }
+  }, [instructionIndex, arInstructions.length]);
 
 
   const handleSkip = () => {
@@ -153,16 +153,24 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       description: "Moving to the next item on your list.",
     });
     
+    const currentItemId = itemToScan.id;
     let nextIndex = instructionIndex;
-    // Jump past all instructions for the current skipped item
-    while(nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === itemToScan.id) {
+
+    // Find the end of instructions for the current item
+    while(nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === currentItemId) {
         nextIndex++;
     }
 
+    // Now, `nextIndex` is at the start of the next item's instructions, or at the end.
     if (nextIndex < arInstructions.length) {
-        setInstructionIndex(nextIndex);
+        // If it's a 'scan' instruction, it might be for the next item. We need to back up to the turn instruction.
+        let targetIndex = nextIndex;
+        while(targetIndex > 0 && arInstructions[targetIndex - 1].itemId === arInstructions[targetIndex].itemId) {
+            targetIndex--;
+        }
+        setInstructionIndex(targetIndex);
     } else {
-        // If skipping the last item, go to the end
+        // If we've skipped the last item, go to the final "finish" instruction.
         setInstructionIndex(arInstructions.length - 1);
     }
   };
@@ -226,12 +234,8 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const handleUserTap = () => {
     if (isScanning || scanResult) return;
     
-    if (currentInstruction) {
-        if (currentInstruction.type === 'scan') {
-            // "Scan Item" button now handles this
-        } else {
-            goToNextInstruction();
-        }
+    if (currentInstruction && currentInstruction.type !== 'scan') {
+      goToNextInstruction();
     }
   }
 
@@ -255,7 +259,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     );
   }
   
-  if (!currentInstruction || currentInstruction.type === 'finish') {
+  if (!currentInstruction || instructionIndex >= arInstructions.length || currentInstruction.type === 'finish') {
      return (
       <div className="w-full h-full flex items-center justify-center bg-black" onClick={handleUserTap}>
         <div className="text-center text-white">
@@ -361,7 +365,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
               </div>
             )}
             {scanResult && (
-                <div className={cn("p-4 rounded-lg text-lg text-white text-center font-semibold animate-fade-in backdrop-blur-md", scanResult.isFound ? "bg-primary/80" : "bg-destructive/80")}>
+                <div className={cn("p-4 rounded-lg text-lg text-white text-center font-semibold animate-fade-in backdrop-blur-md", scanResult.isFound ? "bg-green-600/80" : "bg-destructive/80")}>
                     {scanResult.isFound ? `Found ${itemToScan?.name}!` : `Couldn't find ${itemToScan?.name}. Try again.`}
                 </div>
             )}
@@ -465,4 +469,3 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   );
 }
 
-    
