@@ -300,11 +300,35 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300",
             currentInstruction.type === 'scan' ? 'opacity-0' : 'opacity-100'
         )}>
-            <div key={instructionIndex} className={cn("arrow-container", `arrow-${arrowDirection}`, "animate-fade-in")}>
-                <div className="arrow-chevron"></div>
-                <div className="arrow-chevron"></div>
-                <div className="arrow-chevron"></div>
-            </div>
+             <div
+                key={instructionIndex}
+                className={cn("arrow-container animate-fade-in", `arrow-${arrowDirection}`)}
+              >
+                <svg
+                  viewBox="0 0 100 120"
+                  className="w-full h-full"
+                  style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.3))" }}
+                >
+                  <defs>
+                    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style={{ stopColor: 'hsla(145, 70%, 60%, 0.9)', stopOpacity: 1 }} />
+                      <stop offset="100%" style={{ stopColor: 'hsla(145, 63%, 42%, 0.9)', stopOpacity: 1 }} />
+                    </linearGradient>
+                    <style>
+                      {`
+                        .arrow-pulse-1, .arrow-pulse-2, .arrow-pulse-3 {
+                          animation: chevron-fade 2s infinite ease-in-out;
+                        }
+                        .arrow-pulse-2 { animation-delay: 0.33s; }
+                        .arrow-pulse-3 { animation-delay: 0.66s; }
+                      `}
+                    </style>
+                  </defs>
+                  <path d="M50 0 L100 50 L50 100 L0 50 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-1" />
+                  <path d="M50 0 L100 50 L50 100 L0 50 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-2" />
+                  <path d="M50 0 L100 50 L50 100 L0 50 Z" transform="translate(0, 10)" fill="url(#arrowGradient)" className="arrow-pulse-3" />
+                </svg>
+              </div>
             <div className="mt-16 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
                 <h2 className="text-xl font-bold">
                     {currentInstruction.text}
@@ -411,53 +435,30 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             perspective: 150px;
             animation: float-animation 2s infinite ease-in-out;
             transition: transform 0.5s ease-out;
-        }
-        
-        .arrow-chevron {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-bottom: 40px solid hsla(145, 63%, 42%, 0.9);
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
             transform: rotateX(50deg) scaleY(1.5);
         }
 
-        .arrow-chevron:nth-child(1) {
-            animation: chevron-fade 2s infinite ease-in-out;
-            animation-delay: 0s;
-        }
-        .arrow-chevron:nth-child(2) {
-            animation: chevron-fade 2s infinite ease-in-out;
-            animation-delay: 0.33s;
-        }
-        .arrow-chevron:nth-child(3) {
-            animation: chevron-fade 2s infinite ease-in-out;
-            animation-delay: 0.66s;
-        }
-
         @keyframes chevron-fade {
-            0%, 75%, 100% { opacity: 0; transform: translateY(20px) rotateX(50deg) scaleY(1.5); }
+            0%, 75%, 100% { opacity: 0; transform: translateY(20px); }
             25% { opacity: 1; }
-            50% { opacity: 0; transform: translateY(-20px) rotateX(50deg) scaleY(1.5); }
+            50% { opacity: 0; transform: translateY(-20px); }
         }
         
         @keyframes float-animation {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+            0%, 100% { transform: translateY(0px) rotateX(50deg) scaleY(1.5); }
+            50% { transform: translateY(-20px) rotateX(50deg) scaleY(1.5); }
         }
         
         .arrow-container.arrow-left {
-            transform: rotate(-60deg);
+            transform: rotateX(50deg) scaleY(1.5) rotate(-60deg);
         }
 
         .arrow-container.arrow-right {
-            transform: rotate(60deg);
+            transform: rotateX(50deg) scaleY(1.5) rotate(60deg);
         }
         
         .arrow-container.arrow-straight {
-            transform: rotate(0deg);
+            transform: rotateX(50deg) scaleY(1.5) rotate(0deg);
         }
       `}</style>
     </div>
