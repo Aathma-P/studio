@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -34,7 +35,8 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    // This effect runs only when the items prop changes, establishing the initial optimal route.
+    // This effect runs only when the uncompleted items list changes fundamentally,
+    // establishing the initial optimal route.
     const itemsToVisit = items.filter(i => !i.completed);
     if (itemsToVisit.length === 0) {
       setSortedItems([]);
@@ -75,6 +77,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         currentPoint = nearestItem.navPoint;
         unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
       } else {
+        // No path to any remaining items, break.
         break;
       }
     }
@@ -83,7 +86,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     setArInstructions(instructions);
     setInstructionIndex(0);
 
-  }, [items]);
+  // This dependency array is crucial. It only reruns when the *IDs* of uncompleted items change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.filter(i => !i.completed).map(i => i.id).join(',')]);
 
 
   React.useEffect(() => {
@@ -140,16 +145,15 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
   const advanceToNextLogicalStep = (startSearchIndex: number = instructionIndex) => {
     const currentItemId = arInstructions[startSearchIndex]?.itemId;
+    
+    // If we're not on an item-specific step, just go to the next instruction.
     if (!currentItemId) {
-        // We are likely at the end, stay put.
-        if (instructionIndex < arInstructions.length - 1) {
-            setInstructionIndex(arInstructions.length - 1);
-        }
+        setInstructionIndex(prev => Math.min(prev + 1, arInstructions.length - 1));
         return;
     }
   
     // Find the first instruction that belongs to a *different* item
-    let nextIndex = startSearchIndex;
+    let nextIndex = startSearchIndex + 1;
     while (nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === currentItemId) {
         nextIndex++;
     }
@@ -168,17 +172,18 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
           title: `Skipped ${itemToScan.name}`,
           description: "Moving to the next item on your list.",
       });
+      // Advance past all instructions for the current skipped item.
       advanceToNextLogicalStep();
   };
   
   const handleSuccessfulScan = (itemId: string) => {
+    // Mark the item as found in the parent component.
     onItemScannedAndFound(itemId);
     toast({
         title: `Found it!`,
         description: `Added to your cart.`,
     });
-    // This is the key fix: instead of relying on a full recalculation,
-    // we just advance to the next step in our stable instruction list.
+    // Now, advance to the next step in our *stable* instruction list.
     advanceToNextLogicalStep();
   };
 
@@ -267,7 +272,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     );
   }
 
-  if (!currentInstruction) {
+  if (items.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
         <div className="text-center text-white">
@@ -278,12 +283,20 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       </div>
     )
   }
+  
+  if (!currentInstruction) {
+    // This can happen briefly while instructions are being calculated.
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <LoaderCircle className="w-12 h-12 text-white animate-spin" />
+      </div>
+    );
+  }
 
   const mapPosition = currentInstruction?.pathPoint;
   
-  // Find index of next item to display on map/info panel
   const nextItemOnPathIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
-  const itemsToMap = nextItemOnPathIndex !== -1 ? sortedItems.slice(nextItemOnPathIndex) : sortedItems;
+  const itemsToMap = nextItemOnPathIndex !== -1 ? sortedItems.slice(nextItemOnPathIndex) : [];
   
   const arrowDirection = ['left', 'turn-left'].includes(currentInstruction.type) ? 'left' 
                        : ['right', 'turn-right'].includes(currentInstruction.type) ? 'right' 
