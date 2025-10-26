@@ -20,18 +20,6 @@ interface ArViewProps {
   onItemScannedAndFound: (itemId: string) => void;
 }
 
-const instructionIcons = {
-    "start": ArrowUp,
-    "straight": ArrowUp,
-    "left": CornerUpLeft,
-    "right": ArrowRight,
-    "turn-left": MoveLeft,
-    "turn-right": MoveRight,
-    "scan": ScanLine,
-    "finish": ShoppingBasket,
-};
-
-
 export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const [arInstructions, setArInstructions] = React.useState<Instruction[]>([]);
   const [instructionIndex, setInstructionIndex] = React.useState(0);
