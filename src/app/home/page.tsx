@@ -1,8 +1,9 @@
+
 "use client";
 
 import * as React from "react";
 import Image from "next/image";
-import { Map, Camera, List, ScanLine as Scan, User } from "lucide-react";
+import { Map, Camera, List, ScanLine as Scan, User, Compass } from "lucide-react";
 import { useSearchParams } from 'next/navigation'
 
 
@@ -19,9 +20,10 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import scanBanner from "@/assets/images/scan-banner.png";
 import ProfilePage from "@/components/profile-page";
+import CompassView from "@/components/compass-view";
 
 
-type View = "list" | "map" | "ar" | "scan" | "scan-banner" | "profile";
+type View = "list" | "map" | "ar" | "scan" | "scan-banner" | "profile" | "compass";
 
 export default function HomePage() {
   const [view, setView] = React.useState<View>("list");
@@ -162,6 +164,14 @@ export default function HomePage() {
                 <Map /> 2D Map
             </Button>
             <Button
+                variant={view === 'compass' ? 'secondary' : 'default'}
+                size="sm"
+                onClick={() => setView('compass')}
+                className={cn("gap-2 transition-all", view !== 'compass' && inactiveNavButtonClass)}
+            >
+                <Compass /> Compass
+            </Button>
+            <Button
                 variant={view === 'ar' ? 'secondary' : 'default'}
                 size="sm"
                 onClick={() => setView('ar')}
@@ -198,6 +208,7 @@ export default function HomePage() {
 
         <main className="flex-1 overflow-auto">
            {view === 'map' && <StoreMap items={shoppingList} />}
+           {view === 'compass' && <CompassView items={shoppingList.filter(i => !i.completed)} />}
            {view === 'ar' && isClient && <ArView items={shoppingList.filter(i => !i.completed)} onItemScannedAndFound={handleItemScannedAndFound} />}
            {view === "scan-banner" && (
             <div className="flex items-center justify-center h-full w-full bg-[#EAF6EE] p-4">
@@ -263,6 +274,17 @@ export default function HomePage() {
         >
           <Map />
           <span className="text-xs">Map</span>
+        </Button>
+        <Button
+          variant="ghost"
+          className={cn(
+            "flex h-auto flex-col gap-1 px-2 py-1 transition-colors duration-200 hover:bg-transparent",
+            view === "compass" ? "text-green-600" : "text-muted-foreground hover:text-green-600"
+          )}
+          onClick={() => setView("compass")}
+        >
+          <Compass />
+          <span className="text-xs">Compass</span>
         </Button>
         <Button
           variant="ghost"
