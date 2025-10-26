@@ -81,7 +81,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     if (sortedItems.length > 0) {
       const instructions = getTurnByTurnInstructions(sortedItems);
       setArInstructions(instructions);
-      setInstructionIndex(0);
+      // Do not reset index here, handle it in skip/scan actions
     } else {
       setArInstructions([]);
       setInstructionIndex(0);
@@ -142,22 +142,79 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
 
 
   const goToNextInstruction = React.useCallback(() => {
-    if (instructionIndex < arInstructions.length - 1) {
-      setInstructionIndex(prev => prev + 1);
-    }
-  }, [instructionIndex, arInstructions.length]);
+    setInstructionIndex(prev => {
+        const nextIndex = prev + 1;
+        if (nextIndex < arInstructions.length) {
+            // If the next instruction is to scan the same item we just successfully scanned, skip it
+            if (arInstructions[nextIndex].type === 'scan' && scanResult?.isFound) {
+                return nextIndex + 1 < arInstructions.length ? nextIndex + 1 : nextIndex;
+            }
+            return nextIndex;
+        }
+        return prev;
+    });
+}, [arInstructions.length, scanResult?.isFound]);
 
 
-  const handleSkip = () => {
+const handleSkip = () => {
     if (isScanning || !itemToScan) return;
-    
+
     toast({
       title: `Skipped ${itemToScan.name}`,
       description: "Moving to the next item on your list.",
     });
 
-    setSkippedItemIds(prev => [...prev, itemToScan.id]);
-  };
+    // Add to skipped list
+    const newSkippedIds = [...skippedItemIds, itemToScan.id];
+    setSkippedItemIds(newSkippedIds);
+
+    // Re-calculate instructions based on the new reality
+    const newItemsToVisit = items.filter(i => !i.completed && !newSkippedIds.includes(i.id));
+    const newSortedItems = getSortedItems(newItemsToVisit);
+    const newInstructions = getTurnByTurnInstructions(newSortedItems);
+    
+    // Find the first instruction that is NOT a 'start' instruction.
+    let nextIndex = newInstructions.findIndex(inst => inst.type !== 'start');
+    if (nextIndex === -1) { // If only a start/finish instruction exists
+        nextIndex = 0;
+    }
+
+    setArInstructions(newInstructions);
+    setInstructionIndex(nextIndex);
+};
+
+// Helper function to avoid code duplication, as this logic is used in multiple places
+const getSortedItems = (itemsToVisit: ShoppingListItem[]) => {
+    if (itemsToVisit.length === 0) return [];
+    const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
+    const itemsWithNavPoints = itemsToVisit.map(item => ({
+      ...item,
+      navPoint: { x: getAisleNavX(item.location.aisle), y: item.location.section }
+    }));
+    let unvisited = [...itemsWithNavPoints];
+    let orderedPath: typeof itemsWithNavPoints = [];
+    let currentPoint = ENTRANCE_POS;
+    while (unvisited.length > 0) {
+      let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
+      let shortestDistance = Infinity;
+      for (const item of unvisited) {
+        const path = findPath(currentPoint, item.navPoint);
+        const distance = path ? path.length : Infinity;
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearestItem = item;
+        }
+      }
+      if (nearestItem) {
+        orderedPath.push(nearestItem);
+        currentPoint = nearestItem.navPoint;
+        unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
+      } else {
+        break;
+      }
+    }
+    return orderedPath;
+};
 
 
   const handleScan = async () => {
@@ -188,10 +245,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         
         if (result.isFound) {
             onItemScannedAndFound(itemToScan.id);
-            // The path will be recalculated automatically because the 'items' prop will change
-            // But we can give a smoother experience by just advancing the instruction index
              setTimeout(() => {
-                goToNextInstruction();
+                // We don't need to manually advance, the state change will do it.
+                // But we need to clear the scanning state.
                 setIsScanning(false);
                 setScanResult(null);
             }, 2000);
