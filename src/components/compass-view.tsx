@@ -160,10 +160,9 @@ export default function CompassView({ items }: CompassViewProps) {
 
                 <ArrowUp 
                     className={cn(
-                        'w-24 h-24 md:w-32 md:h-32 text-green-500 transition-transform duration-700',
+                        'w-24 h-24 md:w-32 md:h-32 text-green-500 transition-transform duration-700 ease-spring',
                         getArrowRotation()
                     )}
-                    style={{ transitionTimingFunction: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                     strokeWidth={1.5}
                 />
             </div>
