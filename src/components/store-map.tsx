@@ -186,8 +186,8 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
             <polyline
             points={pathPoints.map(p => `${p.x + 0.5},${p.y + 0.5}`).join(' ')}
             fill="none"
-            stroke="hsl(var(--card))"
-            strokeWidth="0.2"
+            stroke="hsl(var(--foreground))"
+            strokeWidth="0.25"
             strokeLinejoin="round"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
