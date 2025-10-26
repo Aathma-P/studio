@@ -183,16 +183,20 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
       {pathPoints.length > 0 && (
         <svg className="absolute top-0 left-0 w-full h-full z-10" style={{ pointerEvents: 'none' }} 
           viewBox={`0 0 ${GRID_COLS} ${GRID_ROWS}`} preserveAspectRatio="none">
+            <defs>
+                <linearGradient id="path-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" />
+                    <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+            </defs>
             <polyline
-            className="path-animation"
             points={pathPoints.map(p => `${p.x + 0.5},${p.y + 0.5}`).join(' ')}
             fill="none"
-            stroke="hsl(var(--foreground))"
-            strokeWidth="0.2"
+            stroke="url(#path-gradient)"
+            strokeWidth="0.25"
             strokeLinejoin="round"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
-            strokeDasharray="0.4 0.4"
             />
         </svg>
        )}
@@ -209,19 +213,6 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
           <div className="w-3/5 h-3/5 rounded-full bg-blue-500 border-2 border-white shadow-lg" />
         </div>
        )}
-       <style jsx>{`
-        .path-animation {
-            animation: march 15s linear infinite;
-        }
-        @keyframes march {
-            from {
-                stroke-dashoffset: 20;
-            }
-            to {
-                stroke-dashoffset: 0;
-            }
-        }
-       `}</style>
     </div>
   );
 }
