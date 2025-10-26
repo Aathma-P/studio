@@ -187,7 +187,7 @@ export default function StoreMap({ items, simulatedUserPosition }: StoreMapProps
             points={pathPoints.map(p => `${p.x + 0.5},${p.y + 0.5}`).join(' ')}
             fill="none"
             stroke="hsl(var(--foreground))"
-            strokeWidth="0.25"
+            strokeWidth="0.3"
             strokeLinejoin="round"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
