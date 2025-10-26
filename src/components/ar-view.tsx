@@ -469,7 +469,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             perspective: 150px;
             animation: float-animation 2s infinite ease-in-out;
             transition: transform 0.5s ease-out;
-            transform: rotateX(50deg) scaleY(1.5);
         }
 
         @keyframes chevron-fade {
@@ -479,20 +478,23 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         }
         
         @keyframes float-animation {
-            0%, 100% { transform: translateY(0px) rotateX(50deg) scaleY(1.5); }
-            50% { transform: translateY(-20px) rotateX(50deg) scaleY(1.5); }
+            0%, 100% { transform: var(--transform-base); }
+            50% { transform: var(--transform-base) translateY(-20px); }
         }
         
         .arrow-container.arrow-left {
-            transform: rotateX(50deg) scaleY(1.5) rotate(-60deg);
+            --transform-base: rotateX(50deg) scaleY(1.5) rotate(-60deg);
+            transform: var(--transform-base);
         }
 
         .arrow-container.arrow-right {
-            transform: rotateX(50deg) scaleY(1.5) rotate(60deg);
+            --transform-base: rotateX(50deg) scaleY(1.5) rotate(60deg);
+            transform: var(--transform-base);
         }
         
         .arrow-container.arrow-straight {
-            transform: rotateX(50deg) scaleY(1.5) rotate(0deg);
+            --transform-base: rotateX(50deg) scaleY(1.5) rotate(0deg);
+            transform: var(--transform-base);
         }
       `}</style>
     </div>
