@@ -25,7 +25,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
-  const [skippedItemIds, setSkippedItemIds] = React.useState<string[]>([]);
   
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -33,8 +32,8 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const { toast } = useToast();
 
   const itemsToVisit = React.useMemo(() => 
-    items.filter(i => !i.completed && !skippedItemIds.includes(i.id)), 
-  [items, skippedItemIds]);
+    items.filter(i => !i.completed), 
+  [items]);
   
   const sortedItems = React.useMemo(() => {
     if (itemsToVisit.length === 0) return [];
@@ -81,7 +80,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     if (sortedItems.length > 0) {
       const instructions = getTurnByTurnInstructions(sortedItems);
       setArInstructions(instructions);
-      // Do not reset index here, handle it in skip/scan actions
+      setInstructionIndex(0);
     } else {
       setArInstructions([]);
       setInstructionIndex(0);
@@ -145,76 +144,34 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     setInstructionIndex(prev => {
         const nextIndex = prev + 1;
         if (nextIndex < arInstructions.length) {
-            // If the next instruction is to scan the same item we just successfully scanned, skip it
-            if (arInstructions[nextIndex].type === 'scan' && scanResult?.isFound) {
-                return nextIndex + 1 < arInstructions.length ? nextIndex + 1 : nextIndex;
-            }
             return nextIndex;
         }
         return prev;
     });
-}, [arInstructions.length, scanResult?.isFound]);
+  }, [arInstructions.length]);
 
 
-const handleSkip = () => {
-    if (isScanning || !itemToScan) return;
-
-    toast({
-      title: `Skipped ${itemToScan.name}`,
-      description: "Moving to the next item on your list.",
-    });
-
-    // Add to skipped list
-    const newSkippedIds = [...skippedItemIds, itemToScan.id];
-    setSkippedItemIds(newSkippedIds);
-
-    // Re-calculate instructions based on the new reality
-    const newItemsToVisit = items.filter(i => !i.completed && !newSkippedIds.includes(i.id));
-    const newSortedItems = getSortedItems(newItemsToVisit);
-    const newInstructions = getTurnByTurnInstructions(newSortedItems);
-    
-    // Find the first instruction that is NOT a 'start' instruction.
-    let nextIndex = newInstructions.findIndex(inst => inst.type !== 'start');
-    if (nextIndex === -1) { // If only a start/finish instruction exists
-        nextIndex = 0;
-    }
-
-    setArInstructions(newInstructions);
-    setInstructionIndex(nextIndex);
-};
-
-// Helper function to avoid code duplication, as this logic is used in multiple places
-const getSortedItems = (itemsToVisit: ShoppingListItem[]) => {
-    if (itemsToVisit.length === 0) return [];
-    const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
-    const itemsWithNavPoints = itemsToVisit.map(item => ({
-      ...item,
-      navPoint: { x: getAisleNavX(item.location.aisle), y: item.location.section }
-    }));
-    let unvisited = [...itemsWithNavPoints];
-    let orderedPath: typeof itemsWithNavPoints = [];
-    let currentPoint = ENTRANCE_POS;
-    while (unvisited.length > 0) {
-      let nearestItem: (typeof itemsWithNavPoints[0]) | null = null;
-      let shortestDistance = Infinity;
-      for (const item of unvisited) {
-        const path = findPath(currentPoint, item.navPoint);
-        const distance = path ? path.length : Infinity;
-        if (distance < shortestDistance) {
-          shortestDistance = distance;
-          nearestItem = item;
-        }
+  const handleSkip = () => {
+      if (!itemToScan) return;
+  
+      toast({
+          title: `Skipped ${itemToScan.name}`,
+          description: "Moving to the next item on your list.",
+      });
+  
+      // Find the end of the current item's instructions
+      let nextIndex = instructionIndex;
+      while (nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === itemToScan.id) {
+          nextIndex++;
       }
-      if (nearestItem) {
-        orderedPath.push(nearestItem);
-        currentPoint = nearestItem.navPoint;
-        unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
+  
+      // If there are more instructions, move to the next one, otherwise stay at the end
+      if (nextIndex < arInstructions.length) {
+          setInstructionIndex(nextIndex);
       } else {
-        break;
+          setInstructionIndex(arInstructions.length - 1);
       }
-    }
-    return orderedPath;
-};
+  };
 
 
   const handleScan = async () => {
@@ -246,8 +203,9 @@ const getSortedItems = (itemsToVisit: ShoppingListItem[]) => {
         if (result.isFound) {
             onItemScannedAndFound(itemToScan.id);
              setTimeout(() => {
-                // We don't need to manually advance, the state change will do it.
-                // But we need to clear the scanning state.
+                // After successful scan, the `items` prop will change,
+                // which will trigger a recalculation of the path.
+                // We don't need to manually advance.
                 setIsScanning(false);
                 setScanResult(null);
             }, 2000);
@@ -289,25 +247,13 @@ const getSortedItems = (itemsToVisit: ShoppingListItem[]) => {
       )
   }
   
-  if (items.filter(i => !i.completed).length === 0) {
+  if (itemsToVisit.length === 0 && items.length > 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
         <div className="text-center text-white">
           <ShoppingBasket className="mx-auto h-12 w-12 text-green-500" />
           <h3 className="mt-4 text-lg font-medium">Shopping Complete!</h3>
           <p className="mt-1 text-sm text-muted-foreground">{arInstructions[arInstructions.length-1]?.text || "Proceed to checkout."}</p>
-        </div>
-      </div>
-    );
-  }
-  
-  if (itemsToVisit.length === 0 && items.filter(i => !i.completed).length > 0) {
-     return (
-      <div className="w-full h-full flex items-center justify-center bg-black" onClick={handleUserTap}>
-        <div className="text-center text-white">
-          <ShoppingBasket className="mx-auto h-12 w-12 text-green-500" />
-          <h3 className="mt-4 text-lg font-medium">Shopping Complete!</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{currentInstruction?.text || "You've found or skipped all your items. Proceed to checkout."}</p>
         </div>
       </div>
     );
@@ -345,7 +291,7 @@ const getSortedItems = (itemsToVisit: ShoppingListItem[]) => {
                     <CameraOff className="h-4 w-4" />
                     <AlertTitle>Camera Access Required</AlertTitle>
                     <AlertDescription>
-                    Please enable camera permissions in your browser settings to use the AR view.
+                        Please enable camera permissions in your browser settings to use the AR view.
                     </AlertDescription>
                 </Alert>
             </div>
