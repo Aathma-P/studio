@@ -72,17 +72,20 @@ export default function CompassView({ items }: CompassViewProps) {
       setInstructionIndex(0);
     }
   }, [sortedItems]);
-
-  const currentInstruction = instructions[instructionIndex];
-
+  
   const currentItem = React.useMemo(() => {
+    if (instructions.length === 0 || instructionIndex >= instructions.length) return null;
+    const currentInstruction = instructions[instructionIndex];
     if (!currentInstruction) return null;
+
     const nextScanInstruction = instructions.slice(instructionIndex).find(inst => inst.type === 'scan' || inst.type === 'finish');
     if (nextScanInstruction) {
         return sortedItems.find(it => it.id === nextScanInstruction.itemId) || sortedItems[sortedItems.length - 1];
     }
     return null;
-  }, [instructionIndex, instructions, sortedItems, currentInstruction]);
+  }, [instructionIndex, instructions, sortedItems]);
+
+  const currentInstruction = instructions[instructionIndex];
 
   const goToNextInstruction = () => {
     setInstructionIndex(prev => Math.min(prev + 1, instructions.length - 1));
@@ -136,11 +139,11 @@ export default function CompassView({ items }: CompassViewProps) {
   const mapPosition = currentInstruction?.pathPoint;
 
   return (
-    <div className="w-full h-full flex flex-col lg:flex-row items-center justify-center bg-gray-900 text-white p-4 gap-8 overflow-hidden">
+    <div className="w-full h-full flex flex-col lg:flex-row items-center justify-center bg-gray-50 text-gray-800 p-4 gap-8 overflow-hidden">
       <div className="w-full lg:w-1/2 h-full flex flex-col items-center justify-between">
-          <div className="text-center opacity-80">
-            <p className="text-lg">Next Item</p>
-            <p className="text-2xl font-bold">
+          <div className="text-center">
+            <p className="text-lg text-gray-500">Next Item</p>
+            <p className="text-2xl font-bold text-gray-900">
                 {currentItem?.name || "Checkout"}
             </p>
           </div>
@@ -149,32 +152,32 @@ export default function CompassView({ items }: CompassViewProps) {
             key={instructionIndex}
             className="flex flex-col items-center justify-center animate-fade-in"
           >
-            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full bg-gray-800/50 border-4 border-gray-700 flex items-center justify-center">
-                <div className="absolute top-2 text-xl font-bold opacity-50">N</div>
-                <div className="absolute bottom-2 text-xl font-bold opacity-50">S</div>
-                <div className="absolute left-2 text-xl font-bold opacity-50">W</div>
-                <div className="absolute right-2 text-xl font-bold opacity-50">E</div>
+            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center">
+                <div className="absolute top-2 text-xl font-bold text-gray-400">N</div>
+                <div className="absolute bottom-2 text-xl font-bold text-gray-400">S</div>
+                <div className="absolute left-2 text-xl font-bold text-gray-400">W</div>
+                <div className="absolute right-2 text-xl font-bold text-gray-400">E</div>
 
                 <ArrowUp 
                     className={cn(
-                        'w-24 h-24 md:w-32 md:h-32 text-green-400 transition-transform duration-500 ease-in-out',
+                        'w-24 h-24 md:w-32 md:h-32 text-green-500 transition-transform duration-500 ease-in-out',
                         getArrowRotation()
                     )} 
-                    strokeWidth={1}
+                    strokeWidth={1.5}
                 />
             </div>
 
             <div className="mt-8 text-center">
-                <p className="text-2xl md:text-3xl font-bold tracking-tight">
+                <p className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
                     {currentInstruction.text}
                 </p>
                 {currentInstruction.distance && currentInstruction.type === 'straight' && (
-                    <p className="mt-2 text-lg md:text-xl text-green-400 font-medium">
+                    <p className="mt-2 text-lg md:text-xl text-green-600 font-medium">
                         for {currentInstruction.distance * 5} feet
                     </p>
                 )}
                 {currentInstruction.type === 'scan' && (
-                    <p className="mt-2 text-lg md:text-xl text-green-400 font-medium">
+                    <p className="mt-2 text-lg md:text-xl text-green-600 font-medium">
                         Item should be nearby
                     </p>
                 )}
@@ -186,11 +189,10 @@ export default function CompassView({ items }: CompassViewProps) {
                 onClick={goToPreviousInstruction} 
                 disabled={instructionIndex === 0}
                 variant="outline"
-                className="bg-transparent border-gray-600 hover:bg-gray-800 text-white"
               >
                   Previous
               </Button>
-              <p className="text-sm opacity-60">Step {instructionIndex + 1} of {instructions.length}</p>
+              <p className="text-sm text-gray-500">Step {instructionIndex + 1} of {instructions.length}</p>
               <Button 
                 onClick={goToNextInstruction}
                 disabled={instructionIndex === instructions.length -1}
@@ -201,7 +203,7 @@ export default function CompassView({ items }: CompassViewProps) {
           </div>
       </div>
       <div className="w-full lg:w-1/2 h-full flex items-center justify-center p-4">
-        <div className="w-full h-full max-w-md max-h-[50vh] lg:max-h-full aspect-auto rounded-lg overflow-hidden bg-white">
+        <div className="w-full h-full max-w-md max-h-[50vh] lg:max-h-full aspect-auto rounded-lg overflow-hidden bg-white shadow-md border">
           <StoreMap items={sortedItems} simulatedUserPosition={mapPosition} />
         </div>
       </div>
