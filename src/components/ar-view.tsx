@@ -22,6 +22,8 @@ interface ArViewProps {
 export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const [arInstructions, setArInstructions] = React.useState<Instruction[]>([]);
   const [instructionIndex, setInstructionIndex] = React.useState(0);
+  const [sortedItems, setSortedItems] = React.useState<ShoppingListItem[]>([]);
+
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanResult, setScanResult] = React.useState<FindItemOutput | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = React.useState<boolean | null>(null);
@@ -31,12 +33,15 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   
   const { toast } = useToast();
 
-  const itemsToVisit = React.useMemo(() => 
-    items.filter(i => !i.completed), 
-  [items]);
-  
-  const sortedItems = React.useMemo(() => {
-    if (itemsToVisit.length === 0) return [];
+  React.useEffect(() => {
+    // This effect runs only when the items prop changes, establishing the initial optimal route.
+    const itemsToVisit = items.filter(i => !i.completed);
+    if (itemsToVisit.length === 0) {
+      setSortedItems([]);
+      setArInstructions([]);
+      setInstructionIndex(0);
+      return;
+    };
   
     const getAisleNavX = (aisle: number) => (aisle - 1) * 2 + 2;
     
@@ -73,19 +78,12 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         break;
       }
     }
-    return orderedPath;
-  }, [itemsToVisit]);
+    setSortedItems(orderedPath);
+    const instructions = getTurnByTurnInstructions(orderedPath);
+    setArInstructions(instructions);
+    setInstructionIndex(0);
 
-  React.useEffect(() => {
-    if (sortedItems.length > 0) {
-      const instructions = getTurnByTurnInstructions(sortedItems);
-      setArInstructions(instructions);
-      setInstructionIndex(0);
-    } else {
-      setArInstructions([]);
-      setInstructionIndex(0);
-    }
-  }, [sortedItems]);
+  }, [items]);
 
 
   React.useEffect(() => {
@@ -140,37 +138,48 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   }, [instructionIndex, arInstructions, sortedItems]);
 
 
-  const goToNextInstruction = React.useCallback(() => {
-    setInstructionIndex(prev => {
-        const nextIndex = prev + 1;
-        if (nextIndex < arInstructions.length) {
-            return nextIndex;
+  const advanceToNextLogicalStep = (startSearchIndex: number = instructionIndex) => {
+    const currentItemId = arInstructions[startSearchIndex]?.itemId;
+    if (!currentItemId) {
+        // We are likely at the end, stay put.
+        if (instructionIndex < arInstructions.length - 1) {
+            setInstructionIndex(arInstructions.length - 1);
         }
-        return prev;
-    });
-  }, [arInstructions.length]);
-
-
+        return;
+    }
+  
+    // Find the first instruction that belongs to a *different* item
+    let nextIndex = startSearchIndex;
+    while (nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === currentItemId) {
+        nextIndex++;
+    }
+  
+    if (nextIndex < arInstructions.length) {
+        setInstructionIndex(nextIndex);
+    } else {
+        // We've finished with the last item, go to the final instruction (checkout).
+        setInstructionIndex(arInstructions.length - 1);
+    }
+  };
+  
   const handleSkip = () => {
       if (!itemToScan) return;
-  
       toast({
           title: `Skipped ${itemToScan.name}`,
           description: "Moving to the next item on your list.",
       });
+      advanceToNextLogicalStep();
+  };
   
-      // Find the end of the current item's instructions
-      let nextIndex = instructionIndex;
-      while (nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === itemToScan.id) {
-          nextIndex++;
-      }
-  
-      // If there are more instructions, move to the next one, otherwise stay at the end
-      if (nextIndex < arInstructions.length) {
-          setInstructionIndex(nextIndex);
-      } else {
-          setInstructionIndex(arInstructions.length - 1);
-      }
+  const handleSuccessfulScan = (itemId: string) => {
+    onItemScannedAndFound(itemId);
+    toast({
+        title: `Found it!`,
+        description: `Added to your cart.`,
+    });
+    // This is the key fix: instead of relying on a full recalculation,
+    // we just advance to the next step in our stable instruction list.
+    advanceToNextLogicalStep();
   };
 
 
@@ -201,11 +210,8 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         setScanResult(result);
         
         if (result.isFound) {
-            onItemScannedAndFound(itemToScan.id);
              setTimeout(() => {
-                // After successful scan, the `items` prop will change,
-                // which will trigger a recalculation of the path.
-                // We don't need to manually advance.
+                handleSuccessfulScan(itemToScan.id);
                 setIsScanning(false);
                 setScanResult(null);
             }, 2000);
@@ -235,7 +241,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     if (isScanning || scanResult) return;
     
     if (currentInstruction && currentInstruction.type !== 'scan') {
-      goToNextInstruction();
+      setInstructionIndex(prev => Math.min(prev + 1, arInstructions.length - 1));
     }
   }
 
@@ -247,7 +253,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
       )
   }
   
-  if (itemsToVisit.length === 0 && items.length > 0) {
+  const itemsRemainingToFind = items.filter(i => !i.completed).length;
+
+  if (items.length > 0 && itemsRemainingToFind === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
         <div className="text-center text-white">
@@ -272,8 +280,11 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   }
 
   const mapPosition = currentInstruction?.pathPoint;
-  const currentItemIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
-  const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
+  
+  // Find index of next item to display on map/info panel
+  const nextItemOnPathIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
+  const itemsToMap = nextItemOnPathIndex !== -1 ? sortedItems.slice(nextItemOnPathIndex) : sortedItems;
+  
   const arrowDirection = ['left', 'turn-left'].includes(currentInstruction.type) ? 'left' 
                        : ['right', 'turn-right'].includes(currentInstruction.type) ? 'right' 
                        : 'straight';
@@ -403,7 +414,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
                                       </Button>
                                   )}
                                   <Button
-                                      onClick={currentInstruction.type === 'scan' ? handleScan : goToNextInstruction}
+                                      onClick={currentInstruction.type === 'scan' ? handleScan : handleUserTap}
                                       disabled={isScanning}
                                       size="sm"
                                       className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg w-full"
