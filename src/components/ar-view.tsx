@@ -35,8 +35,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    // This effect runs only when the uncompleted items list changes fundamentally,
-    // establishing the initial optimal route.
     const itemsToVisit = items.filter(i => !i.completed);
     if (itemsToVisit.length === 0) {
       setSortedItems([]);
@@ -77,7 +75,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
         currentPoint = nearestItem.navPoint;
         unvisited = unvisited.filter(item => item.id !== nearestItem!.id);
       } else {
-        // No path to any remaining items, break.
         break;
       }
     }
@@ -86,8 +83,8 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     setArInstructions(instructions);
     setInstructionIndex(0);
 
-  // This dependency array is crucial. It only reruns when the *IDs* of uncompleted items change.
-  // This prevents recalculation when an item is marked complete.
+  // This dependency array is now stable. It only reruns when items are added/removed,
+  // not when their 'completed' status changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.map(i => i.id).join(',')]);
 
@@ -144,19 +141,16 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
   }, [instructionIndex, arInstructions, sortedItems]);
 
 
-  const advanceToNextLogicalStep = (startSearchIndex: number = instructionIndex) => {
-    const currentItemId = arInstructions[startSearchIndex]?.itemId;
+  const advanceToNextLogicalStep = () => {
+    if (!currentInstruction) return;
+    const currentItemId = arInstructions[instructionIndex]?.itemId;
     
-    // If we're not on an item-specific step, just go to the next instruction.
-    if (!currentItemId) {
-        setInstructionIndex(prev => Math.min(prev + 1, arInstructions.length - 1));
-        return;
-    }
-  
-    // Find the first instruction that belongs to a *different* item
-    let nextIndex = startSearchIndex + 1;
-    while (nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === currentItemId) {
-        nextIndex++;
+    let nextIndex = instructionIndex + 1;
+    if (currentItemId) {
+      // Find the first instruction that belongs to a *different* item
+      while (nextIndex < arInstructions.length && arInstructions[nextIndex].itemId === currentItemId) {
+          nextIndex++;
+      }
     }
   
     if (nextIndex < arInstructions.length) {
@@ -173,7 +167,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
           title: `Skipped ${itemToScan.name}`,
           description: "Moving to the next item on your list.",
       });
-      // Advance past all instructions for the current skipped item.
       advanceToNextLogicalStep();
   };
   
@@ -502,5 +495,3 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
-
-    

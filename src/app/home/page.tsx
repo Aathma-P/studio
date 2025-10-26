@@ -12,13 +12,13 @@ import { ALL_PRODUCTS } from "@/lib/data";
 
 import { Button } from "@/components/ui/button";
 import ShoppingList from "@/components/shopping-list";
-import StoreMap from "@/components/store-map";
-import ArView from "@/components/ar-view";
+import StoreMap from "@/components/ui/../store-map";
+import ArView from "@/components/ui/../ar-view";
 import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import ProfilePage from "@/components/profile-page";
-import CompassView from "@/components/compass-view";
+import ProfilePage from "@/components/ui/../profile-page";
+import CompassView from "@/components/ui/../compass-view";
 
 
 type View = "list" | "map" | "ar" | "profile" | "compass";
@@ -189,7 +189,7 @@ export default function HomePage() {
         <main className="flex-1 overflow-auto">
            {view === 'map' && <StoreMap items={shoppingList} />}
            {view === 'compass' && <CompassView items={shoppingList.filter(i => !i.completed)} />}
-           {view === 'ar' && isClient && <ArView items={shoppingList.filter(i => !i.completed)} onItemScannedAndFound={handleItemScannedAndFound} />}
+           {view === 'ar' && isClient && <ArView items={shoppingList} onItemScannedAndFound={handleItemScannedAndFound} />}
            {view === 'profile' && isClient && <ProfilePage purchases={previousPurchases} />}
            {view === 'list' && (
              <div className="h-full md:hidden">
