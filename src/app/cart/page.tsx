@@ -4,7 +4,8 @@
 import * as React from "react";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Plus, Minus, CreditCard, LoaderCircle, CheckCircle } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, CreditCard, LoaderCircle, CheckCircle, Home } from "lucide-react";
+import Confetti from 'react-confetti';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -22,18 +23,22 @@ const formatPrice = (price: number) => {
 
 const TAX_RATE = 0.05;
 
-type CheckoutState = 'idle' | 'loading' | 'success';
+type PaymentState = 'idle' | 'processing' | 'success';
 
 export default function CartPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { toast } = useToast();
     const [items, setItems] = React.useState<ShoppingListItem[]>([]);
-    const [checkoutState, setCheckoutState] = React.useState<CheckoutState>('idle');
+    const [paymentState, setPaymentState] = React.useState<PaymentState>('idle');
     const [isClient, setIsClient] = React.useState(false);
+    const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 });
+
     
     React.useEffect(() => {
         setIsClient(true);
+        setDimensions({ width: window.innerWidth, height: window.innerHeight });
+
         const cartData = searchParams.get('items');
         if (cartData) {
             try {
@@ -95,10 +100,10 @@ export default function CartPage() {
     const tax = subtotal * TAX_RATE;
     const grandTotal = subtotal + tax;
 
-    const handleCheckout = () => {
-        if (items.length === 0 || checkoutState !== 'idle' || !isClient) return;
+    const handlePayment = () => {
+        if (items.length === 0 || paymentState !== 'idle' || !isClient) return;
 
-        setCheckoutState('loading');
+        setPaymentState('processing');
     
         setTimeout(() => {
             const newPurchase: PurchaseRecord = {
@@ -120,23 +125,47 @@ export default function CartPage() {
               console.error("Failed to save purchase to localStorage", e);
             }
     
-            toast({
-                description: "You can view your previous purchases in your profile.",
-                className: "bg-green-100 border-green-300 text-green-800 font-medium",
-                duration: 3000,
-            });
+            setPaymentState('success');
 
-            setCheckoutState('success');
-
-            setTimeout(() => {
-                router.push("/home?refresh=true");
-            }, 2000); // Wait 2 seconds on success before redirecting
-
-        }, 1000); // Simulate network delay
+        }, 2000); // Simulate payment processing delay
     };
 
     if (!isClient) {
       return null;
+    }
+
+    if (paymentState === 'success') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-green-50 text-center p-4">
+                <Confetti
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    recycle={false}
+                    numberOfPieces={400}
+                />
+                <div className="bg-white p-8 rounded-2xl shadow-lg max-w-sm w-full animate-in fade-in zoom-in-95">
+                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+                    <h1 className="text-2xl font-bold text-gray-800 mt-4">Payment Successful!</h1>
+                    <p className="text-gray-600 mt-2">Thank you for your purchase. Your order is confirmed.</p>
+                    <Separator className="my-6" />
+                    <div className="space-y-2 text-left">
+                        <p className="text-gray-500 text-sm">ORDER SUMMARY</p>
+                        <div className="flex justify-between items-center text-gray-800">
+                            <p className="font-semibold">Amount Paid</p>
+                            <p className="font-bold text-lg text-green-700">{formatPrice(grandTotal)}</p>
+                        </div>
+                         <div className="flex justify-between items-center text-gray-500 text-sm">
+                            <p>Date</p>
+                            <p className="font-medium">{new Date().toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                     <Button className="mt-8 w-full bg-green-600 text-white hover:bg-green-700 font-medium rounded-lg" onClick={() => router.push('/home?refresh=true')}>
+                        <Home className="mr-2 h-4 w-4" />
+                        Back to Home
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -232,28 +261,21 @@ export default function CartPage() {
             {items.length > 0 && (
                 <footer className="p-4 border-t bg-white sticky bottom-0">
                     <div className="flex items-center justify-between gap-4 max-w-[500px] mx-auto">
-                        <Button
-                        variant="outline"
-                        className="w-1/2 border-2 border-green-600 text-green-700 font-medium hover:bg-green-50 transition"
-                        onClick={() => router.push('/home')}
-                        disabled={checkoutState !== 'idle'}
-                        >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Home
-                        </Button>
+                         <div className="flex flex-col">
+                            <span className="text-sm text-gray-500">Grand Total</span>
+                            <span className="font-bold text-xl text-green-700">{formatPrice(grandTotal)}</span>
+                        </div>
 
                         <Button
-                        onClick={handleCheckout}
-                        disabled={items.length === 0 || checkoutState !== 'idle'}
+                        onClick={handlePayment}
+                        disabled={items.length === 0 || paymentState !== 'idle'}
                         className={cn(
                             "w-1/2 font-semibold transition-all duration-300",
-                            checkoutState === 'success' ? 'bg-blue-500 hover:bg-blue-600 animate-pulse' : 'bg-green-600 hover:bg-green-700',
-                            'text-white'
+                            'bg-green-600 hover:bg-green-700 text-white rounded-lg'
                         )}
                         >
-                        {checkoutState === 'idle' && <> <CreditCard className="mr-2 h-4 w-4" /> Checkout </>}
-                        {checkoutState === 'loading' && <> <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> Processing... </>}
-                        {checkoutState === 'success' && <> <CheckCircle className="mr-2 h-4 w-4" /> Success! </>}
+                        {paymentState === 'idle' && <> <CreditCard className="mr-2 h-4 w-4" /> Proceed to Payment </>}
+                        {paymentState === 'processing' && <> <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> Processing... </>}
                         </Button>
                     </div>
                 </footer>
