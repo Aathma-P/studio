@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUp, CornerUpLeft, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, ArrowRight, SkipForward } from "lucide-react";
+import { ArrowUp, CornerUpLeft, ShoppingBasket, ScanLine, LoaderCircle, CameraOff, MoveLeft, MoveRight, ArrowRight, SkipForward, ChevronRight } from "lucide-react";
 import type { ShoppingListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -241,7 +241,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     
     if (currentInstruction) {
         if (currentInstruction.type === 'scan') {
-            // "Got It" button now handles this
+            // "Scan Item" button now handles this
         } else {
             goToNextInstruction();
         }
@@ -280,7 +280,6 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     );
   }
 
-  const InstructionIcon = instructionIcons[currentInstruction.type] || ArrowUp;
   const mapPosition = currentInstruction?.pathPoint;
   const currentItemIndex = sortedItems.findIndex(it => it.id === currentItem?.id);
   const itemsToMap = currentItemIndex !== -1 ? sortedItems.slice(currentItemIndex) : sortedItems;
@@ -307,78 +306,105 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
             </div>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/30 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60 pointer-events-none" />
         
-        <div className="absolute top-2/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
-            {currentInstruction.type !== 'scan' && (
-              <div key={instructionIndex} className={cn("arrow-container", `arrow-${arrowDirection}`, "animate-fade-in")}>
-                <div className="arrow-body"></div>
-                <div className="arrow-head"></div>
-              </div>
-            )}
-             {currentInstruction.type !== 'scan' && (
-                <div className="absolute top-[130px] left-1/2 -translate-x-1/2 w-max bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
-                    <h2 className="text-lg font-bold">
-                        {currentInstruction.text}
+        {/* Main AR UI elements */}
+        <div className={cn(
+            "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300",
+            currentInstruction.type === 'scan' ? 'opacity-0' : 'opacity-100'
+        )}>
+            <div key={instructionIndex} className={cn("arrow-container", `arrow-${arrowDirection}`, "animate-fade-in")}>
+                <div className="arrow-chevron"></div>
+                <div className="arrow-chevron"></div>
+                <div className="arrow-chevron"></div>
+            </div>
+            <div className="mt-16 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
+                <h2 className="text-xl font-bold">
+                    {currentInstruction.text}
+                </h2>
+            </div>
+        </div>
+
+        {/* Scanning UI elements */}
+        <div className={cn(
+            "absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300",
+            currentInstruction.type === 'scan' ? 'opacity-100' : 'opacity-0',
+            'pointer-events-none'
+        )}>
+           {itemToScan && (
+             <div className="text-center">
+                <div className="bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg">
+                    <h2 className="text-xl font-bold">
+                        Scan for {itemToScan.name}
                     </h2>
                 </div>
-             )}
+             </div>
+           )}
         </div>
         
-         <div className="absolute top-4 right-4 z-20">
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-full px-8">
             {isScanning && !scanResult && itemToScan && (
-              <div className="flex items-center gap-2 text-white bg-black/50 backdrop-blur-md p-2 rounded-lg">
-                <LoaderCircle className="w-5 h-5 animate-spin" />
+              <div className="flex items-center justify-center gap-3 text-white bg-black/50 backdrop-blur-md p-3 rounded-lg text-lg">
+                <LoaderCircle className="w-6 h-6 animate-spin" />
                 <span>Scanning for {itemToScan.name}...</span>
               </div>
             )}
             {scanResult && (
-                <div className={cn("p-2 rounded-lg text-sm text-white animate-fade-in backdrop-blur-md", scanResult.isFound ? "bg-primary/80" : "bg-destructive/80")}>
-                    {scanResult.isFound ? "Item Found!" : "Not Found"}
+                <div className={cn("p-4 rounded-lg text-lg text-white text-center font-semibold animate-fade-in backdrop-blur-md", scanResult.isFound ? "bg-primary/80" : "bg-destructive/80")}>
+                    {scanResult.isFound ? `Found ${itemToScan?.name}!` : `Couldn't find ${itemToScan?.name}. Try again.`}
                 </div>
             )}
         </div>
       </div>
 
-      <div className="w-full bg-white flex flex-col flex-shrink-0 h-2/5">
-        <ScrollArea className="flex-1">
-            <div className="flex flex-col h-full p-4">
-                <div className="relative flex-1 w-full grid place-items-center">
-                    <StoreMap items={itemsToMap} simulatedUserPosition={mapPosition} />
-                </div>
+      {/* Bottom Panel */}
+      <div className="w-full bg-white flex flex-col flex-shrink-0" style={{ maxHeight: '40vh' }}>
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full">
+              <div className="grid grid-cols-2 gap-4 p-4">
+                  <div className="relative grid place-items-center bg-muted/50 rounded-lg p-2">
+                      <StoreMap items={itemsToMap} simulatedUserPosition={mapPosition} />
+                  </div>
+                  <div className="flex flex-col justify-between">
+                      {currentItem && (
+                          <div className="space-y-3">
+                              <div>
+                                  <p className="text-sm font-medium text-gray-500">Next Item</p>
+                                  <p className="font-bold text-lg text-gray-800">{currentItem.name}</p>
+                                  <p className="text-sm text-gray-500">Aisle {currentItem.location.aisle}, Section {currentItem.location.section}</p>
+                              </div>
 
-                {currentItem && (
-                <div className="bg-white shadow-inner pt-4 border-t flex-shrink-0">
-                    <div className="flex items-center justify-between gap-2">
-                    <div>
-                        <p className="font-bold text-gray-800">{currentItem.name}</p>
-                        <p className="text-sm text-gray-500">Aisle {currentItem.location.aisle}, Section {currentItem.location.section}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {currentInstruction.type === 'scan' && (
-                            <Button
-                                onClick={handleSkip}
-                                disabled={isScanning}
-                                variant="outline"
-                                className="font-semibold rounded-lg px-4 py-2"
-                            >
-                                <SkipForward className="mr-2 h-4 w-4" />
-                                Skip
-                            </Button>
-                        )}
-                        <Button
-                            onClick={currentInstruction.type === 'scan' ? handleScan : goToNextInstruction}
-                            disabled={isScanning}
-                            className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg px-6 py-2"
-                        >
-                            {isScanning ? <LoaderCircle className="w-5 h-5 animate-spin"/> : (currentInstruction.type === 'scan' ? "Scan Item" : "Next")}
-                        </Button>
-                    </div>
-                    </div>
-                </div>
-                )}
-            </div>
-        </ScrollArea>
+                              <div className="flex items-center gap-2">
+                                  {currentInstruction.type === 'scan' && (
+                                      <Button
+                                          onClick={handleSkip}
+                                          disabled={isScanning}
+                                          variant="outline"
+                                          size="sm"
+                                          className="font-semibold rounded-lg w-full"
+                                      >
+                                          <SkipForward className="mr-2 h-4 w-4" />
+                                          Skip
+                                      </Button>
+                                  )}
+                                  <Button
+                                      onClick={currentInstruction.type === 'scan' ? handleScan : goToNextInstruction}
+                                      disabled={isScanning}
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg w-full"
+                                  >
+                                      {isScanning 
+                                          ? <LoaderCircle className="w-5 h-5 animate-spin"/> 
+                                          : (currentInstruction.type === 'scan' ? "Scan Item" : "Next")
+                                      }
+                                  </Button>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </ScrollArea>
+        </div>
       </div>
 
       <style jsx>{`
@@ -386,106 +412,67 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
           animation: fadeIn 0.5s ease-in-out;
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
+          from { opacity: 0; transform: translateY(10px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .arrow-container {
-          width: 80px;
-          height: 100px;
-          perspective: 200px;
-          transform-style: preserve-3d;
-          transition: transform 0.4s ease-in-out;
+            width: 100px;
+            height: 120px;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 150px;
+            animation: float-animation 2s infinite ease-in-out;
+            transition: transform 0.5s ease-out;
+        }
+        
+        .arrow-chevron {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 40px solid hsla(145, 63%, 42%, 0.9);
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+            transform: rotateX(50deg) scaleY(1.5);
         }
 
-        .arrow-body, .arrow-head {
-          position: absolute;
-          background-color: #2AC769;
-          box-shadow: 0 5px 15px rgba(42, 199, 105, 0.4);
+        .arrow-chevron:nth-child(1) {
+            animation: chevron-fade 2s infinite ease-in-out;
+            animation-delay: 0s;
+        }
+        .arrow-chevron:nth-child(2) {
+            animation: chevron-fade 2s infinite ease-in-out;
+            animation-delay: 0.33s;
+        }
+        .arrow-chevron:nth-child(3) {
+            animation: chevron-fade 2s infinite ease-in-out;
+            animation-delay: 0.66s;
         }
 
-        .arrow-body {
-          width: 40px;
-          height: 60px;
-          left: 20px;
-          top: 40px;
-          transform: rotateX(60deg);
+        @keyframes chevron-fade {
+            0%, 75%, 100% { opacity: 0; transform: translateY(20px) rotateX(50deg) scaleY(1.5); }
+            25% { opacity: 1; }
+            50% { opacity: 0; transform: translateY(-20px) rotateX(50deg) scaleY(1.5); }
         }
-        .arrow-body::before {
-          content: '';
-          position: absolute;
-          width: 100%;
-          height: 10px;
-          background-color: #1B7E48;
-          transform-origin: top left;
-          transform: rotateX(-90deg);
-        }
-
-        .arrow-head {
-          width: 80px;
-          height: 40px;
-          left: 0;
-          top: 0;
-          clip-path: polygon(50% 0, 100% 100%, 0% 100%);
-          transform: rotateX(60deg);
-        }
-        .arrow-head::before {
-          content: '';
-          position: absolute;
-          width: 100%;
-          height: 10px;
-          background-color: #1B7E48;
-          transform-origin: top center;
-          transform: translateZ(-10px) rotateX(-90deg) scaleX(0.75);
+        
+        @keyframes float-animation {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
         }
         
         .arrow-container.arrow-left {
-            transform: rotateY(-60deg);
+            transform: rotate(-60deg);
         }
 
         .arrow-container.arrow-right {
-            transform: rotateY(60deg);
+            transform: rotate(60deg);
         }
         
         .arrow-container.arrow-straight {
-            transform: rotateY(0deg);
-        }
-
-        .arrow-container {
-            animation-name: float-straight;
-            animation-duration: 2s;
-            animation-iteration-count: infinite;
-            animation-timing-function: ease-in-out;
-        }
-
-        .arrow-container.arrow-left {
-          animation-name: float-left;
-        }
-        .arrow-container.arrow-right {
-          animation-name: float-right;
-        }
-        
-
-        @keyframes float-straight {
-            0% { transform: translateY(0) rotateY(0deg); }
-            50% { transform: translateY(-20px) rotateY(0deg); }
-            100% { transform: translateY(0) rotateY(0deg); }
-        }
-        @keyframes float-left {
-            0% { transform: translateY(0) rotateY(-60deg); }
-            50% { transform: translateY(-20px) rotateY(-60deg); }
-            100% { transform: translateY(0) rotateY(-60deg); }
-        }
-        @keyframes float-right {
-            0% { transform: translateY(0) rotateY(60deg); }
-            50% { transform: translateY(-20px) rotateY(60deg); }
-            100% { transform: translateY(0) rotateY(60deg); }
+            transform: rotate(0deg);
         }
       `}</style>
     </div>
-  );
-}
-
-    
 
     
