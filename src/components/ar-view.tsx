@@ -87,8 +87,9 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     setInstructionIndex(0);
 
   // This dependency array is crucial. It only reruns when the *IDs* of uncompleted items change.
+  // This prevents recalculation when an item is marked complete.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.filter(i => !i.completed).map(i => i.id).join(',')]);
+  }, [items.map(i => i.id).join(',')]);
 
 
   React.useEffect(() => {
@@ -182,6 +183,7 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     toast({
         title: `Found it!`,
         description: `Added to your cart.`,
+        className: 'bg-green-100 border-green-300 text-green-800'
     });
     // Now, advance to the next step in our *stable* instruction list.
     advanceToNextLogicalStep();
@@ -500,3 +502,5 @@ export default function ArView({ items, onItemScannedAndFound }: ArViewProps) {
     </div>
   );
 }
+
+    
